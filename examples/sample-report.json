@@ -1,0 +1,288 @@
+{
+  "example_data": false,
+  "schema_version": "0.1.0-draft",
+  "report_id": "awr-2026-09-26T2354Z-all",
+  "issued_at": "2026-09-26T23:54:38.362Z",
+  "valid_from": "2026-09-26T23:54:38.362Z",
+  "valid_to": "2026-09-27T00:09:38.362Z",
+  "scope": {
+    "ecosystem": "all",
+    "region": "global",
+    "related_ecosystems": [
+      "frameworks",
+      "providers",
+      "mcp",
+      "x402",
+      "xrpl"
+    ]
+  },
+  "conditions": {
+    "visibility": {
+      "name": "data coverage",
+      "value": 0.6,
+      "unit": "fraction of expected sources reporting",
+      "observed": true
+    },
+    "pressure": {
+      "name": "provider disturbance index",
+      "value": 0,
+      "unit": "percent of tracked providers with statuspage indicator != none",
+      "modeled": true,
+      "method": "100 * disturbed_providers / providers_reporting (openai, anthropic, github, cursor)"
+    },
+    "temperature": {
+      "name": "activity level",
+      "value": null,
+      "unit": "z-score vs 30d baseline",
+      "note": "no baseline yet"
+    },
+    "wind": {
+      "speed": null,
+      "unit": "share-points/week",
+      "note": "needs star/download deltas over time"
+    }
+  },
+  "observations": {
+    "frameworks": [
+      {
+        "repo": "langchain-ai/langchain",
+        "stars": null,
+        "forks": null,
+        "open_issues_and_prs": null,
+        "pushed_at": null,
+        "days_since_push": null
+      },
+      {
+        "repo": "langchain-ai/langgraph",
+        "stars": null,
+        "forks": null,
+        "open_issues_and_prs": null,
+        "pushed_at": null,
+        "days_since_push": null
+      },
+      {
+        "repo": "microsoft/autogen",
+        "stars": null,
+        "forks": null,
+        "open_issues_and_prs": null,
+        "pushed_at": null,
+        "days_since_push": null
+      },
+      {
+        "repo": "crewAIInc/crewAI",
+        "stars": null,
+        "forks": null,
+        "open_issues_and_prs": null,
+        "pushed_at": null,
+        "days_since_push": null
+      },
+      {
+        "repo": "openai/openai-agents-python",
+        "stars": null,
+        "forks": null,
+        "open_issues_and_prs": null,
+        "pushed_at": null,
+        "days_since_push": null
+      },
+      {
+        "repo": "modelcontextprotocol/servers",
+        "stars": null,
+        "forks": null,
+        "open_issues_and_prs": null,
+        "pushed_at": null,
+        "days_since_push": null
+      }
+    ],
+    "providers": [
+      {
+        "provider": "openai",
+        "indicator": "none",
+        "description": "All Systems Operational",
+        "degraded_components": []
+      },
+      {
+        "provider": "anthropic",
+        "indicator": "none",
+        "description": "All Systems Operational",
+        "degraded_components": []
+      },
+      {
+        "provider": "github",
+        "indicator": "none",
+        "description": "All Systems Operational",
+        "degraded_components": []
+      },
+      {
+        "provider": "cursor",
+        "indicator": "none",
+        "description": "All Systems Operational",
+        "degraded_components": []
+      }
+    ],
+    "npm_weekly_downloads": [
+      {
+        "package": "@modelcontextprotocol/sdk",
+        "downloads_last_week": 63648696,
+        "period": "2026-09-19..2026-09-25"
+      },
+      {
+        "package": "@x402/core",
+        "downloads_last_week": 320611,
+        "period": "2026-09-19..2026-09-25"
+      },
+      {
+        "package": "@x402/xrpl",
+        "downloads_last_week": 273,
+        "period": "2026-09-19..2026-09-25"
+      }
+    ],
+    "mcp_registry": {
+      "server_entries_updated_last_1h": 44,
+      "lower_bound": false,
+      "since": "2026-09-26T22:54:38Z"
+    },
+    "xrpl_mainnet": {
+      "network_id": 0,
+      "build_version": "3.3.0",
+      "validated_ledger_seq": 107258823,
+      "validated_ledger_age_s": 0,
+      "base_fee_xrp": 1e-05,
+      "reserve_base_xrp": 1,
+      "load_factor": 1
+    }
+  },
+  "fronts": [],
+  "alerts": [],
+  "forecast": [],
+  "sources": [
+    {
+      "name": "npm downloads: @modelcontextprotocol/sdk",
+      "url": "https://api.npmjs.org/downloads/point/last-week/@modelcontextprotocol/sdk",
+      "observed_at": "2026-09-26T23:54:38.376Z",
+      "status": "ok"
+    },
+    {
+      "name": "npm downloads: @x402/core",
+      "url": "https://api.npmjs.org/downloads/point/last-week/@x402/core",
+      "observed_at": "2026-09-26T23:54:38.377Z",
+      "status": "ok"
+    },
+    {
+      "name": "npm downloads: @x402/xrpl",
+      "url": "https://api.npmjs.org/downloads/point/last-week/@x402/xrpl",
+      "observed_at": "2026-09-26T23:54:38.378Z",
+      "status": "ok"
+    },
+    {
+      "name": "GitHub REST API: langchain-ai/langchain",
+      "url": "https://api.github.com/repos/langchain-ai/langchain",
+      "observed_at": "2026-09-26T23:54:38.362Z",
+      "status": "http_403"
+    },
+    {
+      "name": "GitHub REST API: openai/openai-agents-python",
+      "url": "https://api.github.com/repos/openai/openai-agents-python",
+      "observed_at": "2026-09-26T23:54:38.367Z",
+      "status": "http_403"
+    },
+    {
+      "name": "GitHub REST API: langchain-ai/langgraph",
+      "url": "https://api.github.com/repos/langchain-ai/langgraph",
+      "observed_at": "2026-09-26T23:54:38.364Z",
+      "status": "http_403"
+    },
+    {
+      "name": "GitHub REST API: modelcontextprotocol/servers",
+      "url": "https://api.github.com/repos/modelcontextprotocol/servers",
+      "observed_at": "2026-09-26T23:54:38.369Z",
+      "status": "http_403"
+    },
+    {
+      "name": "GitHub REST API: crewAIInc/crewAI",
+      "url": "https://api.github.com/repos/crewAIInc/crewAI",
+      "observed_at": "2026-09-26T23:54:38.366Z",
+      "status": "http_403"
+    },
+    {
+      "name": "Anthropic/Claude status",
+      "url": "https://status.claude.com/api/v2/summary.json",
+      "observed_at": "2026-09-26T23:54:38.371Z",
+      "status": "ok"
+    },
+    {
+      "name": "GitHub REST API: microsoft/autogen",
+      "url": "https://api.github.com/repos/microsoft/autogen",
+      "observed_at": "2026-09-26T23:54:38.365Z",
+      "status": "http_403"
+    },
+    {
+      "name": "Official MCP Registry (server entries updated in last 1h)",
+      "url": "https://registry.modelcontextprotocol.io/v0/servers?limit=100&updated_since=2026-09-26T22:54:38Z",
+      "observed_at": "2026-09-26T23:54:38.380Z",
+      "status": "ok"
+    },
+    {
+      "name": "OpenAI status",
+      "url": "https://status.openai.com/api/v2/summary.json",
+      "observed_at": "2026-09-26T23:54:38.370Z",
+      "status": "ok"
+    },
+    {
+      "name": "XRPL mainnet server_info (xrplcluster.com)",
+      "url": "https://xrplcluster.com/",
+      "observed_at": "2026-09-26T23:54:38.379Z",
+      "status": "ok"
+    },
+    {
+      "name": "GitHub status",
+      "url": "https://www.githubstatus.com/api/v2/summary.json",
+      "observed_at": "2026-09-26T23:54:38.373Z",
+      "status": "ok"
+    },
+    {
+      "name": "Cursor status",
+      "url": "https://status.cursor.com/api/v2/summary.json",
+      "observed_at": "2026-09-26T23:54:38.374Z",
+      "status": "ok"
+    }
+  ],
+  "confidence": {
+    "overall": 0.3,
+    "scale": "0-1",
+    "modeled": true,
+    "rationale": "modeled: visibility x 0.5; capped at 0.5 because there is no baseline/history yet (point-in-time snapshot only)"
+  },
+  "data_gaps": [
+    {
+      "gap": "some framework repo stats",
+      "reason": "GitHub API request failed or rate-limited (60 req/h unauthenticated)"
+    },
+    {
+      "gap": "temperature / wind / humidity (trend-based conditions)",
+      "reason": "no stored 30/90-day baseline yet; this draft only has point-in-time observations"
+    },
+    {
+      "gap": "forecast",
+      "reason": "no history stored yet; forecasts omitted rather than invented"
+    },
+    {
+      "gap": "x402 payment volume",
+      "reason": "no documented public API (see sources.md)"
+    }
+  ],
+  "methodology": {
+    "never_invent": "Failed sources yield null plus a data_gaps entry. Derived values carry modeled:true and their formula.",
+    "cache": "report cached up to 5 minutes"
+  },
+  "payment": {
+    "protocol": "x402",
+    "scheme": "exact",
+    "network": "xrpl:0",
+    "asset": "XRP",
+    "amount": "10000",
+    "transaction": "0000000000000000000000000000000000000000000000000000000000000000",
+    "explorer": "https://livenet.xrpl.org/transactions/0000000000000000000000000000000000000000000000000000000000000000",
+    "invoiceId": "aw-00000000-0000-0000-0000-000000000000",
+    "facilitator": "t54"
+  }
+}

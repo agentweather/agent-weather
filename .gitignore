@@ -1,0 +1,22 @@
+# Secrets: never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*seed*
+*wallet*.json
+
+# Runtime data
+data/
+results/
+logs/
+*.db
+*.db-shm
+*.db-wal
+
+# Tooling
+node_modules/
+dist/
+.DS_Store
+*.log

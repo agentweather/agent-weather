@@ -1,0 +1,354 @@
+openapi: 3.1.0
+info:
+  title: Agent Weather API
+  version: 1.2.0
+  summary: Forecasts for the agent economy. Pay-per-call conditions reports on the AI-agent ecosystem, paid via x402 on the XRP Ledger.
+  description: |
+    Agent Weather sells a JSON "conditions report" on the AI-agent ecosystem per request, paid with
+    [x402](https://x402.org) v2 (scheme `exact`) on XRPL mainnet (`xrpl:0`). No API key or account.
+
+    **Payment flow**
+    1. Call the paid endpoint without payment and receive **402** with a `PAYMENT-REQUIRED` header
+       (base64 of the same JSON as the body). Each 402 mints a fresh single-use `extra.invoiceId`.
+    2. Choose one entry from `accepts[]` (XRP or RLUSD), sign an XRPL `Payment` bound to that invoice,
+       and retry with the base64 x402 `PaymentPayload` in `PAYMENT-SIGNATURE`.
+    3. The server verifies and settles through the facilitator and re-checks the transaction on-ledger.
+       It then returns **200** with the report and a `PAYMENT-RESPONSE` header.
+
+    Settlement uses the T54 XRPL mainnet facilitator (`https://xrpl-facilitator-mainnet.t54.ai`).
+    Use the `x402-xrpl` client (npm/PyPI). The reference `@x402/xrpl` client currently can't pay through
+    T54 (https://github.com/x402-foundation/x402/issues/3527).
+
+    The live `/.well-known/x402` catalog is the source of truth for prices.
+  contact:
+    name: Agent Weather
+    url: https://github.com/agentweather/agent-weather
+  license:
+    name: CC-BY-4.0
+    url: https://creativecommons.org/licenses/by/4.0/
+  x-logo:
+    url: https://raw.githubusercontent.com/agentweather/agent-weather/main/assets/logo.png
+externalDocs:
+  description: Repository and docs
+  url: https://github.com/agentweather/agent-weather
+# No API keys or auth: access is granted per request by an x402 payment (PAYMENT-SIGNATURE header).
+security: []
+servers:
+  - url: https://api.agentweather.io
+    description: Production (XRPL mainnet, xrpl:0)
+tags:
+  - name: paid
+    description: Resources that require an x402 payment
+  - name: discovery
+    description: Free discovery and health endpoints
+paths:
+  /v1/agent-weather/current:
+    get:
+      tags: [paid]
+      operationId: getCurrentConditions
+      summary: Current agent-ecosystem conditions (paid, 0.01 XRP or 0.01 RLUSD)
+      description: |
+        Current conditions snapshot: GitHub stats for 6 agent frameworks (LangChain, LangGraph, AutoGen, CrewAI,
+        OpenAI Agents SDK, MCP servers), OpenAI/Anthropic/GitHub/Cursor status and incidents, MCP Registry entries
+        updated in the last hour, npm weekly downloads (@modelcontextprotocol/sdk, @x402/core, @x402/xrpl) and
+        XRPL mainnet server_info. Weather-style indices (visibility, pressure), per-source timestamps, data gaps
+        and modeled confidence. JSON, cached up to 5 minutes.
+      parameters:
+        - $ref: '#/components/parameters/PaymentSignature'
+        - $ref: '#/components/parameters/XPayment'
+      responses:
+        '200': { $ref: '#/components/responses/Report' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-x402:
+        $ref: '#/components/x-x402-pricing'
+    post:
+      tags: [paid]
+      operationId: postCurrentConditions
+      summary: Same as GET (request body is ignored)
+      description: POST behaves exactly like GET, with the same invoice/verify/settle flow. The request body is ignored.
+      parameters:
+        - $ref: '#/components/parameters/PaymentSignature'
+        - $ref: '#/components/parameters/XPayment'
+      responses:
+        '200': { $ref: '#/components/responses/Report' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+  /.well-known/x402:
+    get:
+      tags: [discovery]
+      operationId: getX402Catalog
+      summary: x402 discovery catalog (free)
+      description: Lists paid resources, prices, payTo, and facilitators. Crawled hourly by the XRPL AI Hub (xrpl-ai.org).
+      responses:
+        '200':
+          description: Catalog
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/X402Catalog' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /healthz:
+    get:
+      tags: [discovery]
+      operationId: getHealth
+      summary: Liveness and dependency health (free, not rate limited)
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+        '503':
+          description: Invoice database unavailable (same body shape, ok=false)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+  /:
+    get:
+      tags: [discovery]
+      operationId: getServiceIndex
+      summary: Service index (free)
+      responses:
+        '200':
+          description: Service index
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [service, version, network, paid, discovery, health]
+                properties:
+                  service: { type: string, const: agent-weather }
+                  version: { type: string, examples: ['1.2.0'] }
+                  network: { type: string, examples: ['xrpl:0'] }
+                  paid: { type: string, format: uri }
+                  discovery: { type: string, format: uri }
+                  health: { type: string, examples: ['/healthz'] }
+        '429': { $ref: '#/components/responses/RateLimited' }
+components:
+  x-x402-pricing:
+    network: xrpl:0
+    scheme: exact
+    payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+    facilitator: https://xrpl-facilitator-mainnet.t54.ai
+    options:
+      - { asset: XRP, amount: '10000', unit: drops, display: 0.01 XRP }
+      - { asset: '524C555344000000000000000000000000000000', symbol: RLUSD, issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De, amount: '0.01', unit: value, display: 0.01 RLUSD }
+  parameters:
+    PaymentSignature:
+      name: PAYMENT-SIGNATURE
+      in: header
+      required: false
+      description: Base64-encoded x402 v2 PaymentPayload (`{x402Version, accepted, payload:{signedTxBlob, invoiceId?}}`). Omit it to receive a 402. Max 16384 characters.
+      schema: { type: string, maxLength: 16384 }
+    XPayment:
+      name: X-PAYMENT
+      in: header
+      required: false
+      deprecated: true
+      description: Legacy (x402 v1-style) header name, accepted as a fallback when PAYMENT-SIGNATURE is absent.
+      schema: { type: string, maxLength: 16384 }
+  headers:
+    RateLimit:
+      description: 'IETF draft-7 rate limit header, e.g. `limit=30, remaining=29, reset=60` (paid route: 30/min per IP; other routes: 120/min).'
+      schema: { type: string }
+    RateLimitPolicy:
+      description: 'e.g. `30;w=60`'
+      schema: { type: string }
+    XRequestId:
+      description: Request id (echoes an incoming X-Request-Id, else a UUID).
+      schema: { type: string }
+  responses:
+    Report:
+      description: Payment settled and verified on-ledger. Returns the report, with a `payment` object appended.
+      headers:
+        PAYMENT-RESPONSE:
+          description: Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+          schema: { type: string }
+        X-Facilitator:
+          description: Which facilitator settled (`t54`). Debug aid.
+          schema: { type: string }
+        X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './schemas/report.schema.json'
+              - type: object
+                properties:
+                  payment: { $ref: '#/components/schemas/PaymentReceipt' }
+    PaymentRequired:
+      description: |
+        Payment required, or the payment attempt was rejected. Every 402 carries a **fresh** invoice.
+        `error` is `payment_required` on a first call; other values explain a rejected attempt.
+      headers:
+        PAYMENT-REQUIRED:
+          description: Base64 of the same JSON as the response body.
+          schema: { type: string }
+        RateLimit: { $ref: '#/components/headers/RateLimit' }
+        RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
+        X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/PaymentRequired' }
+    RateLimited:
+      description: Too many requests from this IP.
+      headers:
+        RateLimit: { $ref: '#/components/headers/RateLimit' }
+        RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
+      content:
+        application/json:
+          schema:
+            type: object
+            properties: { error: { type: string, const: rate_limited } }
+    Busy:
+      description: Too many open invoices server-wide. Retry after the indicated delay.
+      headers:
+        Retry-After:
+          schema: { type: integer, examples: [30] }
+      content:
+        application/json:
+          schema:
+            type: object
+            properties: { error: { type: string, const: busy_try_later } }
+  schemas:
+    PaymentRequirement:
+      type: object
+      required: [scheme, network, payTo, maxTimeoutSeconds, asset, amount, extra]
+      properties:
+        scheme: { type: string, const: exact }
+        network: { type: string, examples: ['xrpl:0'] }
+        payTo: { type: string, examples: [rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ] }
+        maxTimeoutSeconds: { type: integer, examples: [120] }
+        asset:
+          type: string
+          description: '`XRP`, or the 40-hex currency code for an issued token (RLUSD = 524C555344000000000000000000000000000000).'
+        amount:
+          type: string
+          description: Integer drops for XRP (10000 = 0.01 XRP), decimal value string for issued tokens.
+        extra:
+          type: object
+          required: [invoiceId, sourceTag, areFeesSponsored]
+          properties:
+            invoiceId: { type: string, pattern: '^aw-', description: 'Single-use invoice. Bind the payment to it (InvoiceID = SHA-256(invoiceId)).' }
+            sourceTag: { type: integer, const: 804681468, description: T54 facilitator SourceTag }
+            areFeesSponsored: { type: boolean, const: false, description: The payer pays the XRPL network fee. }
+            issuer: { type: string, description: Present for issued tokens (RLUSD mainnet issuer rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De). }
+    PaymentRequired:
+      type: object
+      required: [x402Version, error, resource, accepts]
+      properties:
+        x402Version: { type: integer, const: 2 }
+        error:
+          type: string
+          enum:
+            - payment_required
+            - invalid_payment_header
+            - missing_invoice_id
+            - invoice_id_mismatch
+            - accepted_requirement_not_offered
+            - unknown_invoice
+            - no_facilitator_for_network
+            - invoice_resource_mismatch
+            - invoice_already_used
+            - invoice_in_flight
+            - invoice_locked_settle_failed
+            - invoice_expired
+            - verify_failed
+            - settle_failed
+            - ledger_verification_failed
+            - duplicate_transaction
+            - internal_error
+        resource:
+          type: object
+          required: [url, description, mimeType]
+          properties:
+            url: { type: string, format: uri }
+            description: { type: string }
+            mimeType: { type: string, const: application/json }
+        accepts:
+          type: array
+          items: { $ref: '#/components/schemas/PaymentRequirement' }
+        facilitator: { type: string, description: Present on verify_failed / settle_failed. }
+        facilitatorResponse: { type: object, description: 'Raw facilitator reply (verify_failed / settle_failed).' }
+        reason: { type: string, description: Present on ledger_verification_failed. }
+        transaction: { type: string, description: Present on ledger_verification_failed. }
+    PaymentReceipt:
+      type: object
+      required: [protocol, scheme, network, asset, amount, transaction, explorer, invoiceId, facilitator]
+      properties:
+        protocol: { type: string, const: x402 }
+        scheme: { type: string, const: exact }
+        network: { type: string, examples: ['xrpl:0'] }
+        asset: { type: string, enum: [XRP, RLUSD] }
+        amount: { type: string, examples: ['10000'] }
+        transaction: { type: string, description: XRPL transaction hash }
+        explorer: { type: string, format: uri }
+        invoiceId: { type: string }
+        facilitator: { type: string, examples: [t54] }
+    CatalogPrice:
+      type: object
+      required: [scheme, network, payTo, asset, amount, unit]
+      properties:
+        scheme: { type: string }
+        network: { type: string }
+        payTo: { type: string }
+        asset: { type: string }
+        symbol: { type: string }
+        issuer: { type: string }
+        amount: { type: string }
+        unit: { type: string, enum: [drops, value] }
+    X402Catalog:
+      type: object
+      required: [x402Version, name, description, resources, facilitators, updatedAt]
+      properties:
+        x402Version: { type: integer, const: 2 }
+        name: { type: string }
+        description: { type: string }
+        website: { type: string, format: uri }
+        resources:
+          type: array
+          items:
+            type: object
+            properties:
+              url: { type: string, format: uri }
+              resource: { type: string, format: uri }
+              method: { type: string }
+              methods: { type: array, items: { type: string } }
+              type: { type: string, const: http }
+              name: { type: string }
+              description: { type: string }
+              mimeType: { type: string }
+              network: { type: string }
+              scheme: { type: string }
+              payTo: { type: string }
+              asset: { type: string }
+              amount: { type: string }
+              unit: { type: string }
+              accepts: { type: array, items: { $ref: '#/components/schemas/CatalogPrice' } }
+              extra: { type: object }
+        items:
+          type: array
+          description: Legacy shape kept for older clients.
+          items: { type: object }
+        facilitators: { type: array, items: { type: string, format: uri } }
+        updatedAt: { type: string, format: date-time }
+    Health:
+      type: object
+      required: [ok, version, network, payTo, uptimeSec, db, openInvoices, facilitator]
+      properties:
+        ok: { type: boolean }
+        version: { type: string }
+        network: { type: string }
+        payTo: { type: string }
+        uptimeSec: { type: integer }
+        db: { type: boolean }
+        openInvoices: { type: [integer, 'null'] }
+        facilitator:
+          type: object
+          properties:
+            url: { type: string, format: uri }
+            reachable: { type: boolean }
+            checkedAt: { type: [string, 'null'], format: date-time }
+            detail: { type: string }

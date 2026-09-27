@@ -1,0 +1,92 @@
+{
+  "x402Version": 2,
+  "name": "Agent Weather",
+  "description": "Pay-per-request JSON conditions report on the AI-agent ecosystem, framed as weather. Covers agent-framework GitHub repos, AI provider status and outages, MCP Registry activity, npm adoption of MCP and x402 packages, and XRPL mainnet health, with sources, timestamps, data gaps and a modeled confidence score. Paid in XRP or RLUSD over x402 on the XRP Ledger.",
+  "website": "https://api.agentweather.io",
+  "resources": [
+    {
+      "url": "https://api.agentweather.io/v1/agent-weather/current",
+      "resource": "https://api.agentweather.io/v1/agent-weather/current",
+      "method": "GET",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "type": "http",
+      "name": "Agent Weather: current conditions",
+      "description": "Current conditions snapshot: GitHub stats for 6 agent frameworks (LangChain, LangGraph, AutoGen, CrewAI, OpenAI Agents SDK, MCP servers), OpenAI/Anthropic/GitHub/Cursor status and incidents, MCP Registry entries updated in the last hour, npm weekly downloads (@modelcontextprotocol/sdk, @x402/core, @x402/xrpl) and XRPL mainnet server_info. Weather-style indices (visibility, pressure), per-source timestamps, data gaps and modeled confidence. JSON, cached up to 5 minutes.",
+      "mimeType": "application/json",
+      "network": "xrpl:0",
+      "scheme": "exact",
+      "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+      "asset": "XRP",
+      "amount": "10000",
+      "unit": "drops",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "XRP",
+          "amount": "10000",
+          "unit": "drops"
+        },
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.01",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    }
+  ],
+  "items": [
+    {
+      "resource": "https://api.agentweather.io/v1/agent-weather/current",
+      "method": "GET",
+      "type": "http",
+      "url": "https://api.agentweather.io/v1/agent-weather/current",
+      "description": "Current conditions snapshot: GitHub stats for 6 agent frameworks (LangChain, LangGraph, AutoGen, CrewAI, OpenAI Agents SDK, MCP servers), OpenAI/Anthropic/GitHub/Cursor status and incidents, MCP Registry entries updated in the last hour, npm weekly downloads (@modelcontextprotocol/sdk, @x402/core, @x402/xrpl) and XRPL mainnet server_info. Weather-style indices (visibility, pressure), per-source timestamps, data gaps and modeled confidence. JSON, cached up to 5 minutes.",
+      "mimeType": "application/json",
+      "name": "Agent Weather: current conditions",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "XRP",
+          "amount": "10000",
+          "unit": "drops"
+        },
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.01",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    }
+  ],
+  "facilitators": [
+    "https://xrpl-facilitator-mainnet.t54.ai"
+  ],
+  "updatedAt": "2026-09-27T01:16:48.568Z"
+}

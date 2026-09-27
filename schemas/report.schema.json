@@ -1,0 +1,939 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/agentweather/agent-weather/main/schemas/report.schema.json",
+  "title": "Agent Weather Report (draft 0.2; 0.1 reports remain valid)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "report_id",
+    "issued_at",
+    "valid_from",
+    "valid_to",
+    "scope",
+    "conditions",
+    "alerts",
+    "forecast",
+    "sources",
+    "confidence",
+    "data_gaps"
+  ],
+  "properties": {
+    "example_data": {
+      "type": "boolean",
+      "description": "true if the values are illustrative only"
+    },
+    "_note": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "report_id": {
+      "type": "string"
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "valid_to": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scope": {
+      "type": "object",
+      "required": [
+        "ecosystem"
+      ],
+      "properties": {
+        "ecosystem": {
+          "enum": [
+            "x402",
+            "mcp",
+            "frameworks",
+            "models",
+            "providers",
+            "xrpl",
+            "all"
+          ]
+        },
+        "region": {
+          "type": "string"
+        },
+        "related_ecosystems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "conditions": {
+      "type": "object",
+      "properties": {
+        "pressure": {
+          "$ref": "#/$defs/reading"
+        },
+        "temperature": {
+          "$ref": "#/$defs/reading"
+        },
+        "visibility": {
+          "$ref": "#/$defs/reading"
+        },
+        "humidity": {
+          "$ref": "#/$defs/reading"
+        },
+        "wind": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            },
+            "speed": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "unit": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "fronts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "cold",
+              "warm",
+              "stationary",
+              "occluded"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "detected_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "affected": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence_sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rule": {
+            "type": "string"
+          },
+          "modeled": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "alerts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "severity",
+          "title",
+          "started_at",
+          "source"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "outage",
+              "exploit",
+              "spike",
+              "drop",
+              "deprecation",
+              "other"
+            ]
+          },
+          "severity": {
+            "enum": [
+              "advisory",
+              "watch",
+              "warning",
+              "emergency"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "source": {
+            "type": "string"
+          },
+          "impact_estimate": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "forecast": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "horizon",
+          "metric",
+          "point",
+          "interval",
+          "method"
+        ],
+        "properties": {
+          "horizon": {
+            "type": "string",
+            "description": "ISO 8601 duration"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "point": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "interval": {
+            "type": "object",
+            "required": [
+              "level",
+              "low",
+              "high"
+            ],
+            "properties": {
+              "level": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "low": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "high": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          },
+          "method": {
+            "type": "string"
+          },
+          "ensemble_members": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "climate": {
+      "type": "object",
+      "properties": {
+        "window": {
+          "type": "string"
+        },
+        "trends": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "metric",
+              "direction"
+            ],
+            "properties": {
+              "metric": {
+                "type": "string"
+              },
+              "direction": {
+                "type": "string"
+              },
+              "slope_per_week": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "anomalies_vs_climate": {
+          "type": "array"
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "url",
+          "observed_at"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "required": [
+        "overall"
+      ],
+      "properties": {
+        "overall": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "scale": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        }
+      }
+    },
+    "data_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "gap",
+          "reason"
+        ],
+        "properties": {
+          "gap": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "methodology": {
+      "type": "object"
+    },
+    "payment": {
+      "type": "object"
+    },
+    "observations": {
+      "type": "object",
+      "properties": {
+        "x402_xrpl": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/x402Activity"
+            }
+          ]
+        }
+      }
+    },
+    "baselines": {
+      "type": "object",
+      "required": [
+        "modeled",
+        "method"
+      ],
+      "properties": {
+        "modeled": {
+          "const": true
+        },
+        "method": {
+          "type": "string"
+        },
+        "history": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "snapshots": {
+              "type": "integer"
+            },
+            "hours_collected": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "first": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "last": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "current",
+              "24h",
+              "7d"
+            ],
+            "properties": {
+              "current": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "24h": {
+                "$ref": "#/$defs/baselineWindow"
+              },
+              "7d": {
+                "$ref": "#/$defs/baselineWindow"
+              },
+              "delta_vs_24h_mean": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "z_24h": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "z_7d": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "x402_hourly": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "reading": {
+      "type": "object",
+      "required": [
+        "value",
+        "unit"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string"
+        },
+        "trend": {
+          "type": "string"
+        },
+        "modeled": {
+          "type": "boolean"
+        },
+        "method": {
+          "type": "string"
+        },
+        "observed": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        },
+        "baseline": {
+          "oneOf": [
+            {
+              "const": "insufficient_history"
+            },
+            {
+              "type": "object",
+              "required": [
+                "window",
+                "mean",
+                "stdev"
+              ],
+              "properties": {
+                "window": {
+                  "enum": [
+                    "24h",
+                    "7d"
+                  ]
+                },
+                "mean": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "stdev": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "hours_collected": {
+          "type": "number",
+          "minimum": 0
+        },
+        "required_hours": {
+          "type": "number"
+        },
+        "delta_vs_baseline": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "baseline": {
+                "const": "insufficient_history"
+              }
+            },
+            "required": [
+              "baseline"
+            ]
+          },
+          "then": {
+            "required": [
+              "hours_collected"
+            ]
+          }
+        }
+      ]
+    },
+    "baselineWindow": {
+      "type": "object",
+      "required": [
+        "status",
+        "hours_collected",
+        "required_hours",
+        "samples"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "ok",
+            "insufficient_history"
+          ]
+        },
+        "hours_collected": {
+          "type": "number"
+        },
+        "required_hours": {
+          "type": "number"
+        },
+        "samples": {
+          "type": "integer"
+        },
+        "required_samples": {
+          "type": "integer"
+        },
+        "mean": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "stdev": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "if": {
+        "properties": {
+          "status": {
+            "const": "insufficient_history"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "mean": {
+            "type": "null"
+          },
+          "stdev": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    "assetVolume": {
+      "type": "object",
+      "required": [
+        "asset",
+        "payments",
+        "volume"
+      ],
+      "properties": {
+        "asset": {
+          "type": "string"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "issuer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "payments": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "volume": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string"
+        }
+      }
+    },
+    "x402Window": {
+      "type": "object",
+      "required": [
+        "from",
+        "to",
+        "complete",
+        "measured",
+        "payments",
+        "unique_payers",
+        "unique_payees",
+        "by_asset",
+        "possibly_missed"
+      ],
+      "properties": {
+        "from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "to": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "measured": {
+          "const": true
+        },
+        "payments": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed_payments_tagged": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unique_payers": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unique_payees": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "by_asset": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assetVolume"
+          }
+        },
+        "signature_breakdown": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "possibly_missed": {
+          "type": "object",
+          "required": [
+            "heuristic"
+          ],
+          "properties": {
+            "heuristic": {
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    "x402Activity": {
+      "type": "object",
+      "required": [
+        "available",
+        "filter"
+      ],
+      "if": {
+        "properties": {
+          "available": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "as_of",
+          "coverage",
+          "last_1h",
+          "last_24h",
+          "top_merchants_24h",
+          "new_merchants_24h",
+          "caveats",
+          "servers",
+          "ingest_lag_seconds"
+        ],
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "as_of_ledger": {
+            "type": "integer"
+          },
+          "ingest_lag_seconds": {
+            "type": "number"
+          },
+          "servers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "host",
+                "ledgers"
+              ]
+            }
+          },
+          "coverage": {
+            "type": "object",
+            "required": [
+              "contiguous_from",
+              "contiguous_hours",
+              "scanned_ledgers"
+            ],
+            "properties": {
+              "contiguous_from": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "contiguous_hours": {
+                "type": "number"
+              },
+              "scanned_ledgers": {
+                "type": "integer"
+              }
+            }
+          },
+          "last_1h": {
+            "$ref": "#/$defs/x402Window"
+          },
+          "last_24h": {
+            "$ref": "#/$defs/x402Window"
+          },
+          "last_7d": {
+            "$ref": "#/$defs/x402Window"
+          },
+          "top_merchants_24h": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "payee",
+                "payments",
+                "by_asset"
+              ],
+              "properties": {
+                "payee": {
+                  "type": "string",
+                  "pattern": "^r[1-9A-HJ-NP-Za-km-z]{24,34}$"
+                },
+                "payments": {
+                  "type": "integer"
+                },
+                "by_asset": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/assetVolume"
+                  }
+                }
+              }
+            }
+          },
+          "new_merchants_24h": {
+            "type": "object",
+            "required": [
+              "heuristic",
+              "definition",
+              "prior_coverage_hours",
+              "reliable",
+              "merchants"
+            ],
+            "properties": {
+              "heuristic": {
+                "const": true
+              },
+              "count": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          },
+          "caveats": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "hourly": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "hour",
+                "payments",
+                "by_asset"
+              ]
+            }
+          },
+          "recent_samples": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "tx",
+                "explorer",
+                "ledger",
+                "close_time"
+              ],
+              "properties": {
+                "tx": {
+                  "type": "string",
+                  "pattern": "^[0-9A-F]{64}$"
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "required": [
+          "reason"
+        ]
+      }
+    }
+  }
+}

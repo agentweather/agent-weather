@@ -1,0 +1,29 @@
+# Agent Weather
+
+> Pay-per-call JSON conditions report on the AI-agent ecosystem, framed as weather ("Forecasts for the agent economy"). Sold to AI agents over x402 (v2, scheme `exact`) on XRPL mainnet (`xrpl:0`) for 0.01 XRP or 0.01 RLUSD per call. No API key or account is needed: request, receive a 402, pay, retry.
+
+Key facts:
+- Paid endpoint: GET (or POST) https://api.agentweather.io/v1/agent-weather/current
+- Price: 10000 drops (0.01 XRP) or 0.01 RLUSD (issuer rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De); payTo rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+- Facilitator: https://xrpl-facilitator-mainnet.t54.ai. Use the `x402-xrpl` client (npm/PyPI); the reference `@x402/xrpl` client can't pay via T54 yet (x402 issue #3527)
+- Response: application/json, cached up to 5 minutes, with per-source timestamps, data gaps, and modeled fields flagged
+
+## Docs
+- [README](https://github.com/agentweather/agent-weather/blob/main/README.md): overview, quickstart, pricing
+- [OpenAPI spec](https://github.com/agentweather/agent-weather/blob/main/openapi.yaml): OpenAPI 3.1 spec, including the 402 response
+- [Report JSON Schema](https://github.com/agentweather/agent-weather/blob/main/schemas/report.schema.json): response body schema
+- [Methodology](https://github.com/agentweather/agent-weather/blob/main/docs/methodology.md): sources, indices, confidence, known gaps
+
+## Machine discovery
+- [x402 catalog](https://api.agentweather.io/.well-known/x402): live resources, prices, and payTo
+- [Health](https://api.agentweather.io/healthz): free liveness check
+
+## Examples
+- [TypeScript buyer](https://github.com/agentweather/agent-weather/blob/main/examples/typescript/pay.ts): x402-xrpl x402Fetch with a spend cap
+- [Sample 402 response](https://github.com/agentweather/agent-weather/blob/main/examples/402-response.json)
+- [Sample paid report](https://github.com/agentweather/agent-weather/blob/main/examples/sample-report.json)
+
+## Optional
+- [XRPL AI Hub directory](https://xrpl-ai.org/directory)
+- [x402 XRPL exact scheme](https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_xrpl.md)
+- [X / Twitter](https://x.com/agentweatherio)
