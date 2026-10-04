@@ -20,62 +20,139 @@ info:
     T54 (https://github.com/x402-foundation/x402/issues/3527).
 
     The live `/.well-known/x402` catalog is the source of truth for prices.
-  contact:
-    name: Agent Weather
-    url: https://github.com/agentweather/agent-weather
-  license:
-    name: CC-BY-4.0
-    url: https://creativecommons.org/licenses/by/4.0/
-  x-logo:
-    url: https://raw.githubusercontent.com/agentweather/agent-weather/main/assets/logo.png
-externalDocs:
-  description: Repository and docs
-  url: https://github.com/agentweather/agent-weather
+
+    To see the format before paying, `GET /v1/sample/yesterday` (free, no payment) returns the stored
+    conditions report from about 24 hours ago with a `sample` block marking it as free and not live.
+  contact: { name: Agent Weather, url: 'https://github.com/agentweather/agent-weather' }
+  license: { name: CC-BY-4.0, url: 'https://creativecommons.org/licenses/by/4.0/' }
+  x-logo: { url: 'https://raw.githubusercontent.com/agentweather/agent-weather/main/assets/logo.png' }
+  x-guidance: |
+    Agent Weather sells one JSON report per x402 payment. To buy: GET
+    https://api.agentweather.io/v1/agent-weather/current with no payment header; you receive HTTP 402 with a
+    PAYMENT-REQUIRED header (base64 JSON, same as the body). Pick one accepts[] entry (network xrpl:0; 6700 drops
+    XRP or 0.01 RLUSD), sign an XRPL Payment bound to extra.invoiceId, and retry the same request with the base64
+    PaymentPayload in PAYMENT-SIGNATURE. Every 402 mints a fresh single-use invoice, so always pay the most recent
+    one. Use the x402-xrpl client (npm/PyPI); the reference @x402/xrpl client cannot pay through the T54
+    facilitator yet (x402 issue #3527). The 200 body is the report plus a payment receipt; the PAYMENT-RESPONSE
+    header carries the XRPL transaction hash. POST behaves like GET (body ignored). Free: /v1/sample/yesterday
+    (yesterday's stored report, same JSON format, not live), /healthz, /.well-known/x402, /openapi.json,
+    /llms.txt, /v1/methodology. Other paid resources, same flow and headers: /v1/agent-weather/x402-activity,
+    /v1/pulse/storm, /v1/pulse/facilitator, /v1/pulse/providers, /v1/merchant/{address}, /v1/health/report,
+    /v1/price-index (prices in /.well-known/x402).
+externalDocs: { description: Repository and docs, url: 'https://github.com/agentweather/agent-weather' }
 # No API keys or auth: access is granted per request by an x402 payment (PAYMENT-SIGNATURE header).
 security: []
-servers:
-  - url: https://api.agentweather.io
-    description: Production (XRPL mainnet, xrpl:0)
+servers: [{ url: 'https://api.agentweather.io', description: 'Production (XRPL mainnet, xrpl:0)' }]
 tags:
-  - name: paid
-    description: Resources that require an x402 payment
-  - name: discovery
-    description: Free discovery and health endpoints
+  - { name: paid, description: Resources that require an x402 payment }
+  - { name: discovery, description: Free discovery and health endpoints }
 paths:
   /v1/agent-weather/current:
     get:
       tags: [paid]
       operationId: getCurrentConditions
-      summary: Current agent-ecosystem conditions (paid, 0.01 XRP or 0.01 RLUSD)
+      summary: Current agent-ecosystem conditions (paid, 0.0067 XRP or 0.01 RLUSD)
       description: |
         Current conditions snapshot: GitHub stats for 6 agent frameworks (LangChain, LangGraph, AutoGen, CrewAI,
         OpenAI Agents SDK, MCP servers), OpenAI/Anthropic/GitHub/Cursor status and incidents, MCP Registry entries
-        updated in the last hour, npm weekly downloads (@modelcontextprotocol/sdk, @x402/core, @x402/xrpl) and
-        XRPL mainnet server_info. Weather-style indices (visibility, pressure), per-source timestamps, data gaps
-        and modeled confidence. JSON, cached up to 5 minutes.
-      parameters:
-        - $ref: '#/components/parameters/PaymentSignature'
-        - $ref: '#/components/parameters/XPayment'
+        updated in the last hour, npm weekly downloads (@modelcontextprotocol/sdk, @x402/core, @x402/xrpl) and XRPL
+        mainnet server_info. Weather-style indices (visibility, pressure), per-source timestamps, data gaps and
+        modeled confidence. Also: x402 payment activity on XRPL mainnet from our own ledger scan (t54-tagged payments,
+        volume per asset, unique payers/merchants, heuristic real-vs-automated split with per-merchant concentration),
+        plus 24h/7d baselines, baseline-relative temperature/pressure and fronts. JSON, cached up to 5 minutes.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
       responses:
         '200': { $ref: '#/components/responses/Report' }
         '402': { $ref: '#/components/responses/PaymentRequired' }
         '429': { $ref: '#/components/responses/RateLimited' }
         '503': { $ref: '#/components/responses/Busy' }
-      x-x402:
-        $ref: '#/components/x-x402-pricing'
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.01' }
+        protocols: [{ x402: {} }]
+      x-x402: { $ref: '#/components/x-x402-pricing' }
     post:
       tags: [paid]
       operationId: postCurrentConditions
       summary: Same as GET (request body is ignored)
       description: POST behaves exactly like GET, with the same invoice/verify/settle flow. The request body is ignored.
-      parameters:
-        - $ref: '#/components/parameters/PaymentSignature'
-        - $ref: '#/components/parameters/XPayment'
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
       responses:
         '200': { $ref: '#/components/responses/Report' }
         '402': { $ref: '#/components/responses/PaymentRequired' }
         '429': { $ref: '#/components/responses/RateLimited' }
         '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.01' }
+        protocols: [{ x402: {} }]
+      requestBody:
+        required: false
+        description: 'Ignored. Send no body or {}.'
+        content: { application/json: { schema: { type: object, additionalProperties: true, maxProperties: 0 } } }
+  /v1/sample/yesterday:
+    get:
+      tags: [discovery]
+      operationId: getSampleYesterday
+      summary: 'Free sample: yesterday''s conditions report (free, no payment)'
+      description: |
+        Free sample of the paid `/v1/agent-weather/current` report: the stored conditions report from about 24 hours
+        ago (the latest scheduled snapshot that is at least 24h old), in the same JSON format as the paid route, with
+        a `sample` block added that marks it as free and not live. No payment and no 402. Use it to try the format
+        before buying; for current conditions, buy `/v1/agent-weather/current` via x402. The response has no `payment`
+        receipt. Snapshots stored before 2026-10-03 used older confidence formulas and may mislabel GitHub sources
+        (see `/v1/methodology`).
+      security: []
+      responses:
+        '200':
+          description: |
+            Yesterday's stored report plus a `sample` block (the example is abridged). If no snapshot that old exists yet,
+            the body is `{sample, error: no_snapshot_for_prior_day}` instead.
+          headers:
+            Cache-Control: { description: '`public, max-age=3600`', schema: { type: string } }
+            X-AgentWeather-Sample: { description: 'Always `free` on this route.', schema: { type: string, const: free } }
+            RateLimit: { $ref: '#/components/headers/RateLimit' }
+            RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - allOf:
+                      - { $ref: ./schemas/report.schema.json }
+                      - { type: object, required: [sample], properties: { sample: { $ref: '#/components/schemas/SampleLabel' } } }
+                  - type: object
+                    required: [sample, error]
+                    properties:
+                      sample: { $ref: '#/components/schemas/SampleLabel' }
+                      error: { type: string, const: no_snapshot_for_prior_day }
+              example:
+                sample:
+                  free_sample: true
+                  paid_product: false
+                  sample_of: /v1/agent-weather/current
+                  age: at least 24 hours old
+                  note: 'FREE SAMPLE: the stored conditions report from about 24 hours ago, same JSON format as the paid route. Not live data and not a paid product. For current conditions, buy /v1/agent-weather/current via x402.'
+                  buy: https://api.agentweather.io/v1/agent-weather/current
+                  discovery: https://api.agentweather.io/.well-known/x402
+                  snapshot_taken_at: '2026-10-03T01:15:02.000Z'
+                example_data: false
+                schema_version: 0.2.0-draft
+                report_id: awr-2026-10-03T0115Z-all
+                issued_at: '2026-10-03T01:15:02.000Z'
+                valid_from: '2026-10-03T01:15:02.000Z'
+                valid_to: '2026-10-03T01:30:02.000Z'
+                scope: { ecosystem: all, region: global }
+                conditions:
+                  visibility: { name: data coverage, value: 1, unit: fraction of expected sources reporting, observed: true }
+                alerts: []
+                forecast: []
+                sources: []
+                data_gaps: []
+                confidence: { overall: 0.5, scale: '0-1', modeled: true }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: Snapshot history unavailable.
+          content:
+            application/json:
+              schema: { type: object, properties: { error: { type: string, const: sample_unavailable } } }
   /.well-known/x402:
     get:
       tags: [discovery]
@@ -85,10 +162,9 @@ paths:
       responses:
         '200':
           description: Catalog
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/X402Catalog' }
+          content: { application/json: { schema: { $ref: '#/components/schemas/X402Catalog' } } }
         '429': { $ref: '#/components/responses/RateLimited' }
+      security: []
   /healthz:
     get:
       tags: [discovery]
@@ -97,14 +173,11 @@ paths:
       responses:
         '200':
           description: Healthy
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Health' }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Health' } } }
         '503':
           description: Invoice database unavailable (same body shape, ok=false)
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Health' }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Health' } } }
+      security: []
   /:
     get:
       tags: [discovery]
@@ -124,8 +197,721 @@ paths:
                   network: { type: string, examples: ['xrpl:0'] }
                   paid: { type: string, format: uri }
                   discovery: { type: string, format: uri }
-                  health: { type: string, examples: ['/healthz'] }
+                  health: { type: string, examples: [/healthz] }
+                  openapi: { type: string, format: uri }
+                  free_sample: { type: string, format: uri, description: Free sample route (/v1/sample/yesterday) }
         '429': { $ref: '#/components/responses/RateLimited' }
+      security: []
+  /openapi.json:
+    get:
+      tags: [discovery]
+      operationId: getOpenApi
+      summary: This OpenAPI document (free)
+      security: []
+      responses:
+        '200':
+          description: OpenAPI 3.1 document
+          content: { application/json: { schema: { type: object } } }
+  /llms.txt:
+    get:
+      tags: [discovery]
+      operationId: getLlmsTxt
+      summary: Agent-readable overview (free)
+      security: []
+      responses:
+        '200':
+          description: Markdown (llmstxt.org)
+          content: { text/plain: { schema: { type: string } } }
+  /v1/agent-weather/x402-activity:
+    get:
+      tags: [paid]
+      operationId: getAgentWeatherX402Activity
+      summary: 'Agent Weather: x402 activity on XRPL (paid, 0.0067 XRP or 0.01 RLUSD)'
+      description: |
+        x402 payment activity on XRPL mainnet from our own validated-ledger scan (Payments tagged with the t54
+        facilitator SourceTag 804681468): payments and delivered volume per asset (XRP, RLUSD, other tokens) for the
+        last 1h / 24h / 7d, hourly and daily series, unique payers and merchants, top and new merchants, coverage
+        window, sample transactions with explorer links, a heuristic real-vs-automated split (all / automated_cluster
+        / organic_candidate from a payer-cluster classifier: creation batches, funding lineage, timing regularity,
+        uniform-random amounts) with per-payee concentration (HHI, top-payer share), and explicit caveats. JSON,
+        cached up to 60 seconds.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/X402ActivityBody' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.01' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '6700', unit: drops, display: '0.0067 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.01'
+            unit: value
+            display: 0.01 RLUSD
+    post:
+      tags: [paid]
+      operationId: postAgentWeatherX402Activity
+      summary: Same as GET (request body is ignored)
+      description: POST behaves exactly like GET, with the same invoice/verify/settle flow. The request body is ignored.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/X402ActivityBody' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.01' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '6700', unit: drops, display: '0.0067 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.01'
+            unit: value
+            display: 0.01 RLUSD
+      requestBody:
+        required: false
+        description: 'Ignored. Send no body or {}.'
+        content: { application/json: { schema: { type: object, additionalProperties: true, maxProperties: 0 } } }
+  /v1/pulse/storm:
+    get:
+      tags: [paid]
+      operationId: getPulseStorm
+      summary: 'Agent Weather pulse: storm (paid, 0.001 XRP or 0.001 RLUSD)'
+      description: |
+        Tiny loop-safe signal: is the AI-agent ecosystem stormy right now? Returns storm (boolean), level
+        (calm/breezy/unsettled/storm/unknown), one key reason, asOf and sources. Combines
+        OpenAI/Anthropic/GitHub/Cursor status pages, t54 x402 facilitator health on XRPL and fronts from our 15-minute
+        snapshots. Cached up to 60 s.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/Pulse' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.001' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '1000', unit: drops, display: '0.001 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.001'
+            unit: value
+            display: 0.001 RLUSD
+    post:
+      tags: [paid]
+      operationId: postPulseStorm
+      summary: Same as GET (request body is ignored)
+      description: POST behaves exactly like GET, with the same invoice/verify/settle flow. The request body is ignored.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/Pulse' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.001' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '1000', unit: drops, display: '0.001 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.001'
+            unit: value
+            display: 0.001 RLUSD
+      requestBody:
+        required: false
+        description: 'Ignored. Send no body or {}.'
+        content: { application/json: { schema: { type: object, additionalProperties: true, maxProperties: 0 } } }
+  /v1/pulse/facilitator:
+    get:
+      tags: [paid]
+      operationId: getPulseFacilitator
+      summary: 'Agent Weather pulse: x402 facilitator (paid, 0.001 XRP or 0.001 RLUSD)'
+      description: |
+        Tiny loop-safe preflight: is the t54 x402 facilitator on XRPL mainnet healthy? Returns ok (boolean), level
+        (ok/degraded/down/unknown), one key reason, asOf and sources, from /supported reachability (checked every 5
+        min) and our own ledger scan (on-ledger success rate, fee spikes, tagged-volume drop), plus the share of known
+        x402 endpoints answering with a valid 402. Cached up to 30 s.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/Pulse' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.001' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '1000', unit: drops, display: '0.001 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.001'
+            unit: value
+            display: 0.001 RLUSD
+    post:
+      tags: [paid]
+      operationId: postPulseFacilitator
+      summary: Same as GET (request body is ignored)
+      description: POST behaves exactly like GET, with the same invoice/verify/settle flow. The request body is ignored.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/Pulse' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.001' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '1000', unit: drops, display: '0.001 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.001'
+            unit: value
+            display: 0.001 RLUSD
+      requestBody:
+        required: false
+        description: 'Ignored. Send no body or {}.'
+        content: { application/json: { schema: { type: object, additionalProperties: true, maxProperties: 0 } } }
+  /v1/pulse/providers:
+    get:
+      tags: [paid]
+      operationId: getPulseProviders
+      summary: 'Agent Weather pulse: AI providers (paid, 0.001 XRP or 0.001 RLUSD)'
+      description: |
+        Tiny loop-safe signal: are OpenAI, Anthropic, GitHub and Cursor degraded? Returns degraded (boolean), level
+        (operational/minor/major/critical), one key reason, per-provider Statuspage indicator, asOf and sources.
+        Cached up to 60 s.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/Pulse' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.001' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '1000', unit: drops, display: '0.001 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.001'
+            unit: value
+            display: 0.001 RLUSD
+    post:
+      tags: [paid]
+      operationId: postPulseProviders
+      summary: Same as GET (request body is ignored)
+      description: POST behaves exactly like GET, with the same invoice/verify/settle flow. The request body is ignored.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/Pulse' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.001' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '1000', unit: drops, display: '0.001 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.001'
+            unit: value
+            display: 0.001 RLUSD
+      requestBody:
+        required: false
+        description: 'Ignored. Send no body or {}.'
+        content: { application/json: { schema: { type: object, additionalProperties: true, maxProperties: 0 } } }
+  '/v1/merchant/{address}':
+    get:
+      tags: [paid]
+      operationId: getMerchantAddress
+      summary: 'Agent Weather: x402 merchant integrity profile (paid, 0.02 XRP or 0.03 RLUSD)'
+      description: |
+        Facts about one XRPL x402 payee (GET /v1/merchant/{r-address}): account age, first funder and Domain field,
+        payments and unique payers in the last 24h from our own ledger scan, payer concentration (HHI, top-payer
+        share), heuristic automated-cluster share, payer creation batches, funding links between payers and the
+        merchant, timing regularity, amount distribution, endpoint liveness and valid 402 from one unpaid GET, and a
+        0-100 score with every component and its method shown. Directory listing is reported as unknown. Invalid
+        addresses are rejected with 400 before any payment. JSON, precomputed every 30 min for active payees.
+      parameters:
+        - name: address
+          in: path
+          required: true
+          description: XRPL classic address (payTo) of the payee to profile. Invalid addresses get 400 before any payment.
+          schema: { type: string, pattern: '^r[1-9A-HJ-NP-Za-km-z]{24,34}$' }
+        - { $ref: '#/components/parameters/PaymentSignature' }
+        - { $ref: '#/components/parameters/XPayment' }
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/Merchant' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '400':
+          description: Invalid or missing XRPL address (nothing was charged).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { error: { type: string, const: invalid_or_missing_xrpl_address }, hint: { type: string } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.03' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '20000', unit: drops, display: '0.02 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.03'
+            unit: value
+            display: 0.03 RLUSD
+    post:
+      tags: [paid]
+      operationId: postMerchantAddress
+      summary: Same as GET (request body is ignored)
+      description: POST behaves exactly like GET, with the same invoice/verify/settle flow. The request body is ignored.
+      parameters:
+        - name: address
+          in: path
+          required: true
+          description: XRPL classic address (payTo) of the payee to profile. Invalid addresses get 400 before any payment.
+          schema: { type: string, pattern: '^r[1-9A-HJ-NP-Za-km-z]{24,34}$' }
+        - { $ref: '#/components/parameters/PaymentSignature' }
+        - { $ref: '#/components/parameters/XPayment' }
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/Merchant' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '400':
+          description: Invalid or missing XRPL address (nothing was charged).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { error: { type: string, const: invalid_or_missing_xrpl_address }, hint: { type: string } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.03' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '20000', unit: drops, display: '0.02 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.03'
+            unit: value
+            display: 0.03 RLUSD
+      requestBody:
+        required: false
+        description: 'Ignored. Send no body or {}.'
+        content: { application/json: { schema: { type: object, additionalProperties: true, maxProperties: 0 } } }
+  /v1/health/report:
+    get:
+      tags: [paid]
+      operationId: getHealthReport
+      summary: 'Agent Weather: x402 endpoint and facilitator health (paid, 0.0067 XRP or 0.01 RLUSD)'
+      description: |
+        Health of known x402 endpoints on XRPL and of the t54 facilitator: per-endpoint liveness and valid-402 check
+        from one unpaid GET every 20 min (merchants' own /.well-known/x402 catalogs plus endpoints we discovered),
+        price, asset, network and payTo drift versus the previous check, catalog reachability, and facilitator health
+        from /supported reachability and our own ledger scan (success rate, fee spikes, tagged volume). JSON with
+        sources and data gaps.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/HealthReport' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.01' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '6700', unit: drops, display: '0.0067 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.01'
+            unit: value
+            display: 0.01 RLUSD
+    post:
+      tags: [paid]
+      operationId: postHealthReport
+      summary: Same as GET (request body is ignored)
+      description: POST behaves exactly like GET, with the same invoice/verify/settle flow. The request body is ignored.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/HealthReport' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.01' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '6700', unit: drops, display: '0.0067 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.01'
+            unit: value
+            display: 0.01 RLUSD
+      requestBody:
+        required: false
+        description: 'Ignored. Send no body or {}.'
+        content: { application/json: { schema: { type: object, additionalProperties: true, maxProperties: 0 } } }
+  /v1/price-index:
+    get:
+      tags: [paid]
+      operationId: getPriceIndex
+      summary: 'Agent Weather: x402 price index (XRPL) (paid, 0.0034 XRP or 0.005 RLUSD)'
+      description: |
+        Price index of live x402 resources payable on XRPL mainnet: cheapest live provider per capability category,
+        USD-normalised price distribution (quantiles and bands), every live endpoint with its rails, and price changes
+        since the previous check. Derived from the valid 402 responses our health checker receives every 20 min; XRP
+        prices are converted with a documented XRP/USD median rate (estimate). JSON.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/PriceIndex' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.005' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '3400', unit: drops, display: '0.0034 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.005'
+            unit: value
+            display: 0.005 RLUSD
+    post:
+      tags: [paid]
+      operationId: postPriceIndex
+      summary: Same as GET (request body is ignored)
+      description: POST behaves exactly like GET, with the same invoice/verify/settle flow. The request body is ignored.
+      parameters: [{ $ref: '#/components/parameters/PaymentSignature' }, { $ref: '#/components/parameters/XPayment' }]
+      responses:
+        '200':
+          description: 'Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.'
+          headers:
+            PAYMENT-RESPONSE:
+              description: |
+                Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema: { type: string }
+            X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/PriceIndex' }
+                  - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Busy' }
+      x-payment-info:
+        price: { mode: fixed, currency: USD, amount: '0.005' }
+        protocols: [{ x402: {} }]
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+          - { asset: XRP, amount: '3400', unit: drops, display: '0.0034 XRP' }
+          - asset: 524C555344000000000000000000000000000000
+            symbol: RLUSD
+            issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+            amount: '0.005'
+            unit: value
+            display: 0.005 RLUSD
+      requestBody:
+        required: false
+        description: 'Ignored. Send no body or {}.'
+        content: { application/json: { schema: { type: object, additionalProperties: true, maxProperties: 0 } } }
+  /v1/methodology:
+    get:
+      tags: [discovery]
+      operationId: getMethodology
+      summary: Methodology for heuristic and modeled fields (free)
+      security: []
+      responses:
+        '200':
+          description: JSON methodology document
+          content: { application/json: { schema: { type: object } } }
+  /.well-known/agent-card.json:
+    get:
+      tags: [discovery]
+      operationId: getAgentCard
+      summary: 'Descriptive A2A-style agent card (free; plain HTTP API, no A2A JSON-RPC)'
+      security: []
+      responses:
+        '200':
+          description: Agent card JSON
+          content: { application/json: { schema: { type: object } } }
 components:
   x-x402-pricing:
     network: xrpl:0
@@ -133,14 +919,21 @@ components:
     payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
     facilitator: https://xrpl-facilitator-mainnet.t54.ai
     options:
-      - { asset: XRP, amount: '10000', unit: drops, display: 0.01 XRP }
-      - { asset: '524C555344000000000000000000000000000000', symbol: RLUSD, issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De, amount: '0.01', unit: value, display: 0.01 RLUSD }
+      - { asset: XRP, amount: '6700', unit: drops, display: '0.0067 XRP' }
+      - asset: 524C555344000000000000000000000000000000
+        symbol: RLUSD
+        issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+        amount: '0.01'
+        unit: value
+        display: 0.01 RLUSD
   parameters:
     PaymentSignature:
       name: PAYMENT-SIGNATURE
       in: header
       required: false
-      description: Base64-encoded x402 v2 PaymentPayload (`{x402Version, accepted, payload:{signedTxBlob, invoiceId?}}`). Omit it to receive a 402. Max 16384 characters.
+      description: |
+        Base64-encoded x402 v2 PaymentPayload (`{x402Version, accepted, payload:{signedTxBlob, invoiceId?}}`). Omit it
+        to receive a 402. Max 16384 characters.
       schema: { type: string, maxLength: 16384 }
     XPayment:
       name: X-PAYMENT
@@ -151,47 +944,37 @@ components:
       schema: { type: string, maxLength: 16384 }
   headers:
     RateLimit:
-      description: 'IETF draft-7 rate limit header, e.g. `limit=30, remaining=29, reset=60` (paid route: 30/min per IP; other routes: 120/min).'
+      description: |
+        IETF draft-7 rate limit header, e.g. `limit=30, remaining=29, reset=60` (paid route: 30/min per IP; other
+        routes: 120/min).
       schema: { type: string }
-    RateLimitPolicy:
-      description: 'e.g. `30;w=60`'
-      schema: { type: string }
-    XRequestId:
-      description: Request id (echoes an incoming X-Request-Id, else a UUID).
-      schema: { type: string }
+    RateLimitPolicy: { description: 'e.g. `30;w=60`', schema: { type: string } }
+    XRequestId: { description: 'Request id (echoes an incoming X-Request-Id, else a UUID).', schema: { type: string } }
   responses:
     Report:
-      description: Payment settled and verified on-ledger. Returns the report, with a `payment` object appended.
+      description: 'Payment settled and verified on-ledger. Returns the report, with a `payment` object appended.'
       headers:
         PAYMENT-RESPONSE:
-          description: Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+          description: 'Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).'
           schema: { type: string }
-        X-Facilitator:
-          description: Which facilitator settled (`t54`). Debug aid.
-          schema: { type: string }
+        X-Facilitator: { description: 'Which facilitator settled (`t54`). Debug aid.', schema: { type: string } }
         X-Request-Id: { $ref: '#/components/headers/XRequestId' }
       content:
         application/json:
           schema:
             allOf:
-              - $ref: './schemas/report.schema.json'
-              - type: object
-                properties:
-                  payment: { $ref: '#/components/schemas/PaymentReceipt' }
+              - { $ref: ./schemas/report.schema.json }
+              - { type: object, properties: { payment: { $ref: '#/components/schemas/PaymentReceipt' } } }
     PaymentRequired:
       description: |
         Payment required, or the payment attempt was rejected. Every 402 carries a **fresh** invoice.
         `error` is `payment_required` on a first call; other values explain a rejected attempt.
       headers:
-        PAYMENT-REQUIRED:
-          description: Base64 of the same JSON as the response body.
-          schema: { type: string }
+        PAYMENT-REQUIRED: { description: Base64 of the same JSON as the response body., schema: { type: string } }
         RateLimit: { $ref: '#/components/headers/RateLimit' }
         RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
         X-Request-Id: { $ref: '#/components/headers/XRequestId' }
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/PaymentRequired' }
+      content: { application/json: { schema: { $ref: '#/components/schemas/PaymentRequired' } } }
     RateLimited:
       description: Too many requests from this IP.
       headers:
@@ -199,19 +982,15 @@ components:
         RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
       content:
         application/json:
-          schema:
-            type: object
-            properties: { error: { type: string, const: rate_limited } }
+          schema: { type: object, properties: { error: { type: string, const: rate_limited } } }
     Busy:
       description: Too many open invoices server-wide. Retry after the indicated delay.
       headers:
-        Retry-After:
-          schema: { type: integer, examples: [30] }
+        Retry-After: { schema: { type: integer, examples: [30] } }
       content:
         application/json:
-          schema:
-            type: object
-            properties: { error: { type: string, const: busy_try_later } }
+          schema: { type: object, properties: { error: { type: string, const: busy_try_later } } }
+  # The report body schema (and its $defs) lives in ./schemas/report.schema.json.
   schemas:
     PaymentRequirement:
       type: object
@@ -223,18 +1002,22 @@ components:
         maxTimeoutSeconds: { type: integer, examples: [120] }
         asset:
           type: string
-          description: '`XRP`, or the 40-hex currency code for an issued token (RLUSD = 524C555344000000000000000000000000000000).'
-        amount:
-          type: string
-          description: Integer drops for XRP (10000 = 0.01 XRP), decimal value string for issued tokens.
+          description: |
+            `XRP`, or the 40-hex currency code for an issued token (RLUSD = 524C555344000000000000000000000000000000).
+        amount: { type: string, description: 'Integer drops for XRP (10000 = 0.01 XRP), decimal value string for issued tokens.' }
         extra:
           type: object
           required: [invoiceId, sourceTag, areFeesSponsored]
           properties:
-            invoiceId: { type: string, pattern: '^aw-', description: 'Single-use invoice. Bind the payment to it (InvoiceID = SHA-256(invoiceId)).' }
+            invoiceId:
+              type: string
+              pattern: '^aw-'
+              description: Single-use invoice. Bind the payment to it (InvoiceID = SHA-256(invoiceId)).
             sourceTag: { type: integer, const: 804681468, description: T54 facilitator SourceTag }
             areFeesSponsored: { type: boolean, const: false, description: The payer pays the XRPL network fee. }
-            issuer: { type: string, description: Present for issued tokens (RLUSD mainnet issuer rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De). }
+            issuer:
+              type: string
+              description: Present for issued tokens (RLUSD mainnet issuer rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De).
     PaymentRequired:
       type: object
       required: [x402Version, error, resource, accepts]
@@ -267,13 +1050,21 @@ components:
             url: { type: string, format: uri }
             description: { type: string }
             mimeType: { type: string, const: application/json }
-        accepts:
-          type: array
-          items: { $ref: '#/components/schemas/PaymentRequirement' }
+            serviceName: { type: string, maxLength: 32, description: Bazaar service metadata (printable ASCII) }
+            tags: { type: array, maxItems: 5, items: { type: string, maxLength: 32 } }
+            iconUrl: { type: string, format: uri, maxLength: 2048 }
+        accepts: { type: array, items: { $ref: '#/components/schemas/PaymentRequirement' } }
         facilitator: { type: string, description: Present on verify_failed / settle_failed. }
-        facilitatorResponse: { type: object, description: 'Raw facilitator reply (verify_failed / settle_failed).' }
+        facilitatorResponse: { type: object, description: Raw facilitator reply (verify_failed / settle_failed). }
         reason: { type: string, description: Present on ledger_verification_failed. }
         transaction: { type: string, description: Present on ledger_verification_failed. }
+        extensions:
+          type: object
+          description: |
+            x402 v2 extensions. `bazaar` carries the discovery declaration (info + JSON Schema) used by CDP Bazaar and
+            x402scan.
+          properties:
+            bazaar: { type: object, required: [info, schema], properties: { info: { type: object }, schema: { type: object } } }
     PaymentReceipt:
       type: object
       required: [protocol, scheme, network, asset, amount, transaction, explorer, invoiceId, facilitator]
@@ -328,10 +1119,7 @@ components:
               unit: { type: string }
               accepts: { type: array, items: { $ref: '#/components/schemas/CatalogPrice' } }
               extra: { type: object }
-        items:
-          type: array
-          description: Legacy shape kept for older clients.
-          items: { type: object }
+        items: { type: array, description: Legacy shape kept for older clients., items: { type: object } }
         facilitators: { type: array, items: { type: string, format: uri } }
         updatedAt: { type: string, format: date-time }
     Health:
@@ -352,3 +1140,164 @@ components:
             reachable: { type: boolean }
             checkedAt: { type: [string, 'null'], format: date-time }
             detail: { type: string }
+    X402ActivityBody:
+      title: 'Agent Weather x402 activity on XRPL (draft 0.2: adds activity.real_vs_automated)'
+      type: object
+      required: [example_data, schema_version, report_id, issued_at, scope, activity, sources, data_gaps, methodology]
+      properties:
+        example_data: { const: false }
+        schema_version: { type: string }
+        report_id: { type: string }
+        issued_at: { type: string, format: date-time }
+        scope:
+          type: object
+          required: [ecosystem, network]
+          properties: { ecosystem: { const: x402 }, network: { const: 'xrpl:0' } }
+        activity: { $ref: './schemas/report.schema.json#/$defs/x402Activity' }
+        sources:
+          type: array
+          items:
+            type: object
+            required: [name, url, observed_at]
+            properties: { url: { type: string, format: uri }, observed_at: { type: string, format: date-time } }
+        data_gaps: { type: array, items: { type: object, required: [gap, reason] } }
+        methodology: { type: object, required: [definitions] }
+        payment: { type: object }
+    Pulse:
+      type: object
+      required: [schema_version, signal, level, reason, asOf, sources]
+      properties:
+        signal: { enum: [storm, facilitator, providers] }
+        level: { type: string }
+        reason: { type: string, minLength: 3 }
+        asOf: { type: [string, 'null'], format: date-time }
+        storm: { type: boolean }
+        ok: { type: [boolean, 'null'] }
+        degraded: { type: boolean }
+        sources: { type: array }
+      allOf:
+        - if: { properties: { signal: { const: storm } } }
+          then:
+            required: [storm]
+            properties: { level: { enum: [calm, breezy, unsettled, storm, unknown] } }
+        - if: { properties: { signal: { const: facilitator } } }
+          then:
+            required: [ok]
+            properties: { level: { enum: [ok, degraded, down, unknown] } }
+        - if: { properties: { signal: { const: providers } } }
+          then:
+            required: [degraded, providers]
+            properties: { level: { enum: [operational, minor, major, critical, unknown] } }
+    Merchant:
+      type: object
+      required: [example_data, schema_version, report_id, issued_at, merchant, sources, data_gaps, methodology]
+      properties:
+        example_data: { const: false }
+        sources:
+          type: array
+          items:
+            type: object
+            required: [name, url, observed_at]
+            properties: { observed_at: { type: [string], format: date-time }, url: { type: string } }
+        data_gaps: { type: array, items: { type: object, required: [gap, reason] } }
+        merchant:
+          type: object
+          required: [address]
+          properties:
+            address: { type: string, pattern: '^r[1-9A-HJ-NP-Za-km-z]{24,34}$' }
+            directory_listing: { type: object, required: [status, reason] }
+            score:
+              type: object
+              required: [value, band, score_coverage, components, method]
+              properties:
+                value: { type: [integer, 'null'], minimum: 0, maximum: 100 }
+                band: { enum: [no_concentration_flags, mixed_signals, concentrated_or_automated_traffic, insufficient_data] }
+                components:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    required: [weight, value, basis]
+                    properties:
+                      weight: { type: number }
+                      value: { type: [number, 'null'], minimum: 0, maximum: 1 }
+                      basis: { type: string }
+            concentration: { type: object, required: [payer_hhi, top_payer_share] }
+            account: { type: object, required: [created_at, domain_field, source] }
+    HealthReport:
+      type: object
+      required: [example_data, schema_version, issued_at, endpoints, drift, facilitator, sources, data_gaps, methodology]
+      properties:
+        sources:
+          type: array
+          items:
+            type: object
+            required: [name, url, observed_at]
+            properties: { observed_at: { type: [string], format: date-time }, url: { type: string } }
+        data_gaps: { type: array, items: { type: object, required: [gap, reason] } }
+        endpoints:
+          type: [object, 'null']
+          required: [cycle, checked_to, probed, status_counts, results]
+          properties:
+            results:
+              type: array
+              items:
+                type: object
+                required: [url, status, valid_402]
+                properties:
+                  status:
+                    enum:
+                      - live_402
+                      - live_402_testnet_only
+                      - invalid_402
+                      - live_405_get_not_allowed
+                      - live_200_no_payment
+                      - not_found
+                      - server_error
+                      - client_error
+                      - unreachable
+        facilitator:
+          type: [object, 'null']
+          required: [level, ok, reasons, checked_at, reachability, method]
+          properties: { level: { enum: [ok, degraded, down, unknown] } }
+    PriceIndex:
+      type: object
+      required: [example_data, schema_version, issued_at, index, sources, data_gaps, methodology]
+      properties:
+        sources:
+          type: array
+          items:
+            type: object
+            required: [name, url, observed_at]
+            properties: { observed_at: { type: [string], format: date-time }, url: { type: string } }
+        data_gaps: { type: array, items: { type: object, required: [gap, reason] } }
+        index:
+          type: [object, 'null']
+          required:
+            - cycle
+            - as_of
+            - scope
+            - live_endpoints
+            - categories
+            - distribution_usd
+            - changes_since_previous_cycle
+            - endpoints
+            - method
+          properties:
+            categories: { type: array, items: { type: object, required: [category, live_endpoints, cheapest] } }
+            distribution_usd: { type: object, required: [n, median, bands] }
+    SampleLabel:
+      type: object
+      description: Added by /v1/sample/yesterday only. Marks the body as a free, non-live sample.
+      required: [free_sample, paid_product, sample_of, age, note, buy, discovery]
+      properties:
+        free_sample: { type: boolean, const: true }
+        paid_product: { type: boolean, const: false }
+        sample_of: { type: string, examples: [/v1/agent-weather/current] }
+        age: { type: string, examples: [at least 24 hours old] }
+        note: { type: string }
+        buy: { type: string, format: uri }
+        discovery: { type: string, format: uri }
+        snapshot_taken_at:
+          type: string
+          format: date-time
+          description: When the stored snapshot was taken (absent on the no_snapshot_for_prior_day body).

@@ -27,7 +27,8 @@
 | | |
 |---|---|
 | **Endpoint** | `GET https://api.agentweather.io/v1/agent-weather/current` (POST behaves identically) |
-| **Price** | `0.01 XRP` (10000 drops) **or** `0.01 RLUSD` per call |
+| **Price** | `0.0067 XRP` (6700 drops) **or** `0.01 RLUSD` per call |
+| **Free sample** | `GET https://api.agentweather.io/v1/sample/yesterday`: yesterday's report in the same format, no payment |
 | **Protocol** | x402 v2, scheme `exact`, network `xrpl:0` (XRPL mainnet) |
 | **Pay to** | `rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ` |
 | **RLUSD issuer** | `rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De` |
@@ -40,6 +41,8 @@
 1. An unpaid request returns `402 Payment Required`. The body and the `PAYMENT-REQUIRED` header (base64) list both price options and a fresh single-use `invoiceId` ([example](./examples/402-response.json)).
 2. Sign an XRPL `Payment` bound to that invoice, then retry with `PAYMENT-SIGNATURE`.
 3. You receive the report ([example](./examples/sample-report.json)) plus a `PAYMENT-RESPONSE` header containing the XRPL transaction hash, which is your receipt.
+
+**Try the format first, free:** `GET https://api.agentweather.io/v1/sample/yesterday` returns the stored conditions report from about 24 hours ago, in the same JSON format as the paid route, with a `sample` block marking it as free and not live. No payment, no 402. Buy `/v1/agent-weather/current` for current conditions.
 
 ## What you get
 
@@ -64,7 +67,7 @@ Agents need to decide whether to act *now*: which provider to call, whether a fr
 | Pressure | Share of tracked providers (OpenAI, Anthropic, GitHub, Cursor) whose status page shows a disturbance (modeled) |
 | Alerts | Active provider incidents |
 | Temperature / wind / fronts / forecast | Not yet populated. They need a stored baseline and are listed in `data_gaps` rather than invented |
-| Confidence | Modeled 0–1 score based on coverage; capped until history exists |
+| Confidence | Modeled 0–1 score (`calibrated: false`): visibility scaled by 24h/7d history coverage. It measures data coverage and continuity, not accuracy |
 
 ## Quickstart: pay as an agent (TypeScript)
 
@@ -97,6 +100,7 @@ console.log(report.conditions, receipt.transaction);
 
 ```bash
 curl -i https://api.agentweather.io/v1/agent-weather/current
+curl -s https://api.agentweather.io/v1/sample/yesterday | jq '.sample, .conditions'   # free sample, ~24h old
 curl -s https://api.agentweather.io/.well-known/x402 | jq
 curl -s https://api.agentweather.io/healthz | jq
 ```
@@ -123,9 +127,10 @@ curl -s https://api.agentweather.io/healthz | jq
 
 | Resource | XRP | RLUSD |
 |---|---|---|
-| `/v1/agent-weather/current` | 0.01 XRP (10000 drops) | 0.01 RLUSD |
+| `/v1/agent-weather/current` | 0.0067 XRP (6700 drops) | 0.01 RLUSD |
+| `/v1/sample/yesterday` | free | free |
 
-The buyer also pays the XRPL network fee (typically ~10 drops). The live [`/.well-known/x402`](https://api.agentweather.io/.well-known/x402) catalog is the source of truth.
+Other paid resources (x402 activity, pulse signals, merchant profiles, endpoint health, price index) are listed with their prices in [`openapi.yaml`](./openapi.yaml). The XRP amount is re-priced from the XRP/USD rate when it moves 10% or more. The buyer also pays the XRPL network fee (typically ~10 drops). The live [`/.well-known/x402`](https://api.agentweather.io/.well-known/x402) catalog is the source of truth.
 
 ## Links
 

@@ -1,11 +1,12 @@
 # Agent Weather
 
-> Pay-per-call JSON conditions report on the AI-agent ecosystem, framed as weather ("Forecasts for the agent economy"). Sold to AI agents over x402 (v2, scheme `exact`) on XRPL mainnet (`xrpl:0`) for 0.01 XRP or 0.01 RLUSD per call. No API key or account is needed: request, receive a 402, pay, retry.
+> Pay-per-call JSON conditions report on the AI-agent ecosystem, framed as weather ("Forecasts for the agent economy"). Sold to AI agents over x402 (v2, scheme `exact`) on XRPL mainnet (`xrpl:0`) for 0.0067 XRP or 0.01 RLUSD per call. No API key or account is needed: request, receive a 402, pay, retry.
 
 Key facts:
 - Paid endpoint: GET (or POST) https://api.agentweather.io/v1/agent-weather/current
-- Price: 10000 drops (0.01 XRP) or 0.01 RLUSD (issuer rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De); payTo rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+- Price: 6700 drops (0.0067 XRP) or 0.01 RLUSD (issuer rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De); payTo rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
 - Facilitator: https://xrpl-facilitator-mainnet.t54.ai. Use the `x402-xrpl` client (npm/PyPI); the reference `@x402/xrpl` client can't pay via T54 yet (x402 issue #3527)
+- Free sample (no payment): GET https://api.agentweather.io/v1/sample/yesterday returns the stored report from about 24 hours ago in the same JSON format, with a `sample` block marking it as free and not live
 - Response: application/json, cached up to 5 minutes, with per-source timestamps, data gaps, and modeled fields flagged
 
 ## Docs
@@ -17,6 +18,7 @@ Key facts:
 ## Machine discovery
 - [x402 catalog](https://api.agentweather.io/.well-known/x402): live resources, prices, and payTo
 - [Health](https://api.agentweather.io/healthz): free liveness check
+- [Free sample](https://api.agentweather.io/v1/sample/yesterday): yesterday's conditions report, same format as the paid route, no payment
 
 ## Examples
 - [TypeScript buyer](https://github.com/agentweather/agent-weather/blob/main/examples/typescript/pay.ts): x402-xrpl x402Fetch with a spend cap

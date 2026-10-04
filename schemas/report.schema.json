@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/agentweather/agent-weather/main/schemas/report.schema.json",
-  "title": "Agent Weather Report (draft 0.2; 0.1 reports remain valid)",
+  "title": "Agent Weather Report (draft 0.3; 0.1 reports remain valid)",
   "type": "object",
   "required": [
     "schema_version",
@@ -925,6 +925,240 @@
                   "pattern": "^[0-9A-F]{64}$"
                 }
               }
+            }
+          },
+          "real_vs_automated": {
+            "$ref": "#/$defs/realVsAutomated"
+          }
+        }
+      },
+      "else": {
+        "required": [
+          "reason"
+        ]
+      }
+    },
+    "rvaBucket": {
+      "type": "object",
+      "required": [
+        "payments",
+        "share_of_payments",
+        "unique_payers",
+        "unique_payees",
+        "by_asset",
+        "label",
+        "method"
+      ],
+      "properties": {
+        "payments": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "share_of_payments": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unique_payers": {
+          "type": "integer"
+        },
+        "unique_payees": {
+          "type": "integer"
+        },
+        "by_asset": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "asset",
+              "payments",
+              "volume"
+            ]
+          }
+        },
+        "label": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "string"
+        },
+        "heuristic": {
+          "const": true
+        }
+      }
+    },
+    "rvaWindow": {
+      "type": "object",
+      "required": [
+        "all",
+        "automated_cluster",
+        "organic_candidate"
+      ],
+      "properties": {
+        "all": {
+          "$ref": "#/$defs/rvaBucket"
+        },
+        "automated_cluster": {
+          "$ref": "#/$defs/rvaBucket"
+        },
+        "organic_candidate": {
+          "$ref": "#/$defs/rvaBucket"
+        }
+      }
+    },
+    "realVsAutomated": {
+      "type": "object",
+      "required": [
+        "available",
+        "classifier",
+        "heuristic",
+        "method",
+        "methodology_url"
+      ],
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "heuristic": {
+          "const": true
+        },
+        "methodology_url": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "if": {
+        "properties": {
+          "available": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "as_of",
+          "computed_at",
+          "window",
+          "totals",
+          "clusters",
+          "per_payee",
+          "lineage_coverage",
+          "hub_labels",
+          "caveats"
+        ],
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totals": {
+            "type": "object",
+            "required": [
+              "last_1h",
+              "last_24h"
+            ],
+            "properties": {
+              "last_1h": {
+                "$ref": "#/$defs/rvaWindow"
+              },
+              "last_24h": {
+                "$ref": "#/$defs/rvaWindow"
+              }
+            }
+          },
+          "clusters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "label",
+                "payers",
+                "confidence",
+                "signals_present"
+              ],
+              "properties": {
+                "label": {
+                  "const": "automated_cluster"
+                },
+                "confidence": {
+                  "enum": [
+                    "high",
+                    "medium",
+                    "low"
+                  ]
+                }
+              }
+            }
+          },
+          "per_payee": {
+            "type": "object",
+            "required": [
+              "payees",
+              "definitions"
+            ],
+            "properties": {
+              "payees": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "payee",
+                    "payments",
+                    "automated_cluster_payments",
+                    "organic_candidate_payments",
+                    "automated_cluster_share",
+                    "unique_payers",
+                    "payer_hhi",
+                    "top_payer_share",
+                    "concentration"
+                  ],
+                  "properties": {
+                    "payee": {
+                      "type": "string",
+                      "pattern": "^r[1-9A-HJ-NP-Za-km-z]{24,34}$"
+                    },
+                    "payer_hhi": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "concentration": {
+                      "enum": [
+                        "concentrated",
+                        "moderately_concentrated",
+                        "unconcentrated"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "hub_labels": {
+            "type": "object",
+            "required": [
+              "used"
+            ],
+            "properties": {
+              "used": {
+                "const": false
+              }
+            }
+          },
+          "caveats": {
+            "type": "array",
+            "minItems": 3,
+            "items": {
+              "type": "string"
             }
           }
         }

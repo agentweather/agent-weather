@@ -23,11 +23,11 @@ Applies to report `schema_version` **0.1.0-draft**, which is what the live API s
 
 | Field | Kind | Definition |
 |---|---|---|
-| `conditions.visibility` | observed | Fraction of expected sources that reported successfully (0–1). |
+| `conditions.visibility` | observed | Fraction of expected sources that reported successfully (0–1): 15 public sources (6 GitHub repos, 4 status pages, 3 npm packages, XRPL `server_info`, MCP Registry) plus the x402 activity section, which counts as not reporting when it is unavailable or stale (see `confidence.overall`). |
 | `conditions.pressure` | modeled | "Provider disturbance index": `100 * disturbed_providers / providers_reporting` over OpenAI, Anthropic, GitHub, Cursor, where "disturbed" means Statuspage indicator ≠ `none`. |
 | `conditions.temperature` | not yet computed | Planned: activity z-score vs a 30-day baseline. `null` until a baseline exists. |
 | `conditions.wind` | not yet computed | Planned: share shifts from star/download deltas over time. `null` until history exists. |
-| `confidence.overall` | modeled | `visibility × 0.5`, capped at 0.5 while there is no history (point-in-time snapshot only). |
+| `confidence.overall` | modeled, `calibrated: false` | With stored history: `visibility × (0.5 + 0.3·cov24h + 0.2·cov7d)`, where `cov` = distinct 15-minute slots holding a scheduler snapshot ÷ expected slots (96 per 24h, 672 per 7d); paid/served snapshots do not count. `visibility` includes the x402 activity section as one expected source, counted as not reporting when it is unavailable, stale (ingest lag > 600 s), its 24h window is incomplete, or the classifier is stale. Without history (point-in-time only): `visibility × 0.5`. Not calibrated against outcomes: the coverage term measures history continuity, not accuracy, and reaches 1.0 after 7 days of uninterrupted collection. The report's `confidence` object carries `modeled: true` and `calibrated: false`. Snapshots stored before 2026-10-03 used older formulas and may list GitHub sources mislabeled as "npm downloads: …" (a source-fetching race, fixed 2026-10-03); the free `/v1/sample/yesterday` route can still return such a snapshot until about 2026-10-04. |
 | `alerts[]` | observed | Active provider incidents. |
 | `fronts[]`, `forecast[]` | empty | Not produced until history exists, and listed in `data_gaps`. |
 
@@ -40,7 +40,7 @@ Applies to report `schema_version` **0.1.0-draft**, which is what the live API s
 
 ## Schema
 
-The JSON Schema in [`../schemas/report.schema.json`](../schemas/report.schema.json) is draft 0.2 and stays backward-compatible with 0.1 reports. It already defines optional sections (e.g. baselines, x402 activity) that the live API doesn't serve yet; those sections are absent from 0.1 responses.
+The JSON Schema in [`../schemas/report.schema.json`](../schemas/report.schema.json) is draft 0.3 and stays backward-compatible with 0.1 reports. It defines optional sections (baselines, x402 activity and its heuristic real-vs-automated split); those sections are absent from 0.1 responses.
 
 ## Sources evaluated but not used
 
