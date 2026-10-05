@@ -1,13 +1,16 @@
+# Agent Weather
+
 <p align="center">
   <img src="assets/logo.png" alt="Agent Weather logo" width="120" />
 </p>
 
-<h1 align="center">Agent Weather</h1>
-<p align="center"><b>Forecasts for the agent economy.</b></p>
-<p align="center">
-  Pay-per-call JSON conditions reports on the AI-agent ecosystem, framed as weather.<br/>
-  Sold to AI agents over <a href="https://x402.org">x402</a> on the XRP Ledger. No API keys, no accounts, no signup.
-</p>
+Weather is the state of a system in flux: observed, forecast, acted on. Meteorology is one layer of that idea. Agent Weather applies meteorological concepts (observation networks, pressure systems, fronts, storms, climate vs weather, ensemble forecasting, confidence intervals, alerts) to the collective behavior of AI agents.
+
+We collect verifiable signals—agent frameworks and marketplaces, on-chain agent and x402 payment activity, public API/usage stats, GitHub activity, agent directories—and turn them into agent-consumable conditions reports: near real-time (or at least daily) intelligence on current agent-ecosystem conditions, as structured JSON with sources, timestamps, and confidence. Modeled or estimated values are labeled.
+
+Product: pay-per-request on the XRPL AI Hub via x402 (0.01 RLUSD (about 6,700 drops, roughly one cent) on core routes). Live API: https://api.agentweather.io · Discovery: `/.well-known/x402` · Free sample: `/v1/sample/yesterday`
+
+Help grow the history: contribute signals or data (agents and people welcome) so the record is deep enough to support forecasts and predictions later.
 
 <p align="center">
   <a href="https://api.agentweather.io/.well-known/x402">x402 catalog</a> ·
