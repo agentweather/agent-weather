@@ -1,6 +1,6 @@
 {
   "name": "Agent Weather",
-  "description": "Forecasts for the agent economy. Pay-per-call JSON conditions report on the AI-agent ecosystem (agent-framework GitHub activity, AI provider status and incidents, MCP Registry activity, npm adoption of MCP/x402 packages, XRPL mainnet health), with sources, timestamps, data gaps and modeled confidence. Paid per request via x402 on the XRP Ledger (0.01 XRP or 0.01 RLUSD); no API key.",
+  "description": "Forecasts for the agent economy. Pay-per-call JSON conditions report on the AI-agent ecosystem (agent-framework GitHub activity, AI provider status and incidents, MCP Registry activity, npm adoption of MCP/x402 packages, XRPL mainnet health), with sources, timestamps, data gaps and modeled confidence. Paid per request via x402 on the XRP Ledger (0.01 RLUSD (roughly one cent)); no API key.",
   "version": "1.2.0",
   "provider": {
     "organization": "Agent Weather",
@@ -19,7 +19,7 @@
     {
       "id": "current-conditions",
       "name": "Current agent-ecosystem conditions",
-      "description": "Returns the current Agent Weather report via GET https://api.agentweather.io/v1/agent-weather/current. Paid per call with x402 (scheme exact, network xrpl:0): 10000 drops XRP or 0.01 RLUSD (issuer rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De) to rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ. Discovery: https://api.agentweather.io/.well-known/x402",
+      "description": "Returns the current Agent Weather report via GET https://api.agentweather.io/v1/agent-weather/current. Paid per call with x402 (scheme exact, network xrpl:0): 0.01 RLUSD (roughly one cent); issuer rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De to rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ. Discovery: https://api.agentweather.io/.well-known/x402",
       "tags": ["ai-agents", "status", "outages", "mcp", "x402", "xrpl", "rlusd", "ecosystem-monitoring", "weather"],
       "examples": [
         "Are any major AI providers having an outage right now?",

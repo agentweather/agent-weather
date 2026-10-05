@@ -10,7 +10,7 @@ info:
     **Payment flow**
     1. Call the paid endpoint without payment and receive **402** with a `PAYMENT-REQUIRED` header
        (base64 of the same JSON as the body). Each 402 mints a fresh single-use `extra.invoiceId`.
-    2. Choose one entry from `accepts[]` (XRP or RLUSD), sign an XRPL `Payment` bound to that invoice,
+    2. Choose the RLUSD entry from `accepts[]`, sign an XRPL `Payment` bound to that invoice,
        and retry with the base64 x402 `PaymentPayload` in `PAYMENT-SIGNATURE`.
     3. The server verifies and settles through the facilitator and re-checks the transaction on-ledger.
        It then returns **200** with the report and a `PAYMENT-RESPONSE` header.
@@ -29,8 +29,7 @@ info:
   x-guidance: |
     Agent Weather sells one JSON report per x402 payment. To buy: GET
     https://api.agentweather.io/v1/agent-weather/current with no payment header; you receive HTTP 402 with a
-    PAYMENT-REQUIRED header (base64 JSON, same as the body). Pick one accepts[] entry (network xrpl:0; 6700 drops
-    XRP or 0.01 RLUSD), sign an XRPL Payment bound to extra.invoiceId, and retry the same request with the base64
+    PAYMENT-REQUIRED header (base64 JSON, same as the body). Pick the accepts[] entry (network xrpl:0; 0.01 RLUSD (roughly one cent)), sign an XRPL Payment bound to extra.invoiceId, and retry the same request with the base64
     PaymentPayload in PAYMENT-SIGNATURE. Every 402 mints a fresh single-use invoice, so always pay the most recent
     one. Use the x402-xrpl client (npm/PyPI); the reference @x402/xrpl client cannot pay through the T54
     facilitator yet (x402 issue #3527). The 200 body is the report plus a payment receipt; the PAYMENT-RESPONSE
@@ -51,7 +50,7 @@ paths:
     get:
       tags: [paid]
       operationId: getCurrentConditions
-      summary: Current agent-ecosystem conditions (paid, 0.0067 XRP or 0.01 RLUSD)
+      summary: Current agent-ecosystem conditions (paid, 0.01 RLUSD)
       description: |
         Current conditions snapshot: GitHub stats for 6 agent frameworks (LangChain, LangGraph, AutoGen, CrewAI,
         OpenAI Agents SDK, MCP servers), OpenAI/Anthropic/GitHub/Cursor status and incidents, MCP Registry entries
@@ -226,7 +225,7 @@ paths:
     get:
       tags: [paid]
       operationId: getAgentWeatherX402Activity
-      summary: 'Agent Weather: x402 activity on XRPL (paid, 0.0067 XRP or 0.01 RLUSD)'
+      summary: 'Agent Weather: x402 activity on XRPL (paid, 0.01 RLUSD)'
       description: |
         x402 payment activity on XRPL mainnet from our own validated-ledger scan (Payments tagged with the t54
         facilitator SourceTag 804681468): payments and delivered volume per asset (XRP, RLUSD, other tokens) for the
@@ -264,7 +263,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '6700', unit: drops, display: '0.0067 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -305,7 +303,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '6700', unit: drops, display: '0.0067 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -320,7 +317,7 @@ paths:
     get:
       tags: [paid]
       operationId: getPulseStorm
-      summary: 'Agent Weather pulse: storm (paid, 0.001 XRP or 0.001 RLUSD)'
+      summary: 'Agent Weather pulse: storm (paid, 0.001 RLUSD)'
       description: |
         Tiny loop-safe signal: is the AI-agent ecosystem stormy right now? Returns storm (boolean), level
         (calm/breezy/unsettled/storm/unknown), one key reason, asOf and sources. Combines
@@ -355,7 +352,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '1000', unit: drops, display: '0.001 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -396,7 +392,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '1000', unit: drops, display: '0.001 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -411,7 +406,7 @@ paths:
     get:
       tags: [paid]
       operationId: getPulseFacilitator
-      summary: 'Agent Weather pulse: x402 facilitator (paid, 0.001 XRP or 0.001 RLUSD)'
+      summary: 'Agent Weather pulse: x402 facilitator (paid, 0.001 RLUSD)'
       description: |
         Tiny loop-safe preflight: is the t54 x402 facilitator on XRPL mainnet healthy? Returns ok (boolean), level
         (ok/degraded/down/unknown), one key reason, asOf and sources, from /supported reachability (checked every 5
@@ -446,7 +441,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '1000', unit: drops, display: '0.001 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -487,7 +481,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '1000', unit: drops, display: '0.001 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -502,7 +495,7 @@ paths:
     get:
       tags: [paid]
       operationId: getPulseProviders
-      summary: 'Agent Weather pulse: AI providers (paid, 0.001 XRP or 0.001 RLUSD)'
+      summary: 'Agent Weather pulse: AI providers (paid, 0.001 RLUSD)'
       description: |
         Tiny loop-safe signal: are OpenAI, Anthropic, GitHub and Cursor degraded? Returns degraded (boolean), level
         (operational/minor/major/critical), one key reason, per-provider Statuspage indicator, asOf and sources.
@@ -536,7 +529,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '1000', unit: drops, display: '0.001 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -577,7 +569,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '1000', unit: drops, display: '0.001 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -592,7 +583,7 @@ paths:
     get:
       tags: [paid]
       operationId: getMerchantAddress
-      summary: 'Agent Weather: x402 merchant integrity profile (paid, 0.02 XRP or 0.03 RLUSD)'
+      summary: 'Agent Weather: x402 merchant integrity profile (paid, 0.03 RLUSD)'
       description: |
         Facts about one XRPL x402 payee (GET /v1/merchant/{r-address}): account age, first funder and Domain field,
         payments and unique payers in the last 24h from our own ledger scan, payer concentration (HHI, top-payer
@@ -643,7 +634,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '20000', unit: drops, display: '0.02 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -698,7 +688,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '20000', unit: drops, display: '0.02 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -713,7 +702,7 @@ paths:
     get:
       tags: [paid]
       operationId: getHealthReport
-      summary: 'Agent Weather: x402 endpoint and facilitator health (paid, 0.0067 XRP or 0.01 RLUSD)'
+      summary: 'Agent Weather: x402 endpoint and facilitator health (paid, 0.01 RLUSD)'
       description: |
         Health of known x402 endpoints on XRPL and of the t54 facilitator: per-endpoint liveness and valid-402 check
         from one unpaid GET every 20 min (merchants' own /.well-known/x402 catalogs plus endpoints we discovered),
@@ -749,7 +738,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '6700', unit: drops, display: '0.0067 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -790,7 +778,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '6700', unit: drops, display: '0.0067 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -805,7 +792,7 @@ paths:
     get:
       tags: [paid]
       operationId: getPriceIndex
-      summary: 'Agent Weather: x402 price index (XRPL) (paid, 0.0034 XRP or 0.005 RLUSD)'
+      summary: 'Agent Weather: x402 price index (XRPL) (paid, 0.005 RLUSD)'
       description: |
         Price index of live x402 resources payable on XRPL mainnet: cheapest live provider per capability category,
         USD-normalised price distribution (quantiles and bands), every live endpoint with its rails, and price changes
@@ -840,7 +827,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '3400', unit: drops, display: '0.0034 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -881,7 +867,6 @@ paths:
         payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
         facilitator: https://xrpl-facilitator-mainnet.t54.ai
         options:
-          - { asset: XRP, amount: '3400', unit: drops, display: '0.0034 XRP' }
           - asset: 524C555344000000000000000000000000000000
             symbol: RLUSD
             issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
@@ -919,7 +904,6 @@ components:
     payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
     facilitator: https://xrpl-facilitator-mainnet.t54.ai
     options:
-      - { asset: XRP, amount: '6700', unit: drops, display: '0.0067 XRP' }
       - asset: 524C555344000000000000000000000000000000
         symbol: RLUSD
         issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De

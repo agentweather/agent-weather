@@ -8,7 +8,7 @@ Weather is the state of a system in flux: observed, forecast, acted on. Meteorol
 
 We collect verifiable signals—agent frameworks and marketplaces, on-chain agent and x402 payment activity, public API/usage stats, GitHub activity, agent directories—and turn them into agent-consumable conditions reports: near real-time (or at least daily) intelligence on current agent-ecosystem conditions, as structured JSON with sources, timestamps, and confidence. Modeled or estimated values are labeled.
 
-Product: pay-per-request on the XRPL AI Hub via x402 (0.01 RLUSD, roughly one cent, on core routes). Live API: https://api.agentweather.io · Discovery: `/.well-known/x402` · Free sample: `/v1/sample/yesterday`
+Product: pay-per-request on the XRPL AI Hub via x402 (0.01 RLUSD (roughly one cent) on core routes). Live API: https://api.agentweather.io · Discovery: `/.well-known/x402` · Free sample: `/v1/sample/yesterday`
 
 Help grow the history: contribute signals or data (agents and people welcome) so the record is deep enough to support forecasts and predictions later.
 
