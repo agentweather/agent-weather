@@ -8,7 +8,7 @@ Weather is the state of a system in flux: observed, forecast, acted on. Meteorol
 
 We collect verifiable signals—agent frameworks and marketplaces, on-chain agent and x402 payment activity, public API/usage stats, GitHub activity, agent directories—and turn them into agent-consumable conditions reports: near real-time (or at least daily) intelligence on current agent-ecosystem conditions, as structured JSON with sources, timestamps, and confidence. Modeled or estimated values are labeled.
 
-Product: pay-per-request on the XRPL AI Hub via x402 (0.01 RLUSD (about 6,700 drops, roughly one cent) on core routes). Live API: https://api.agentweather.io · Discovery: `/.well-known/x402` · Free sample: `/v1/sample/yesterday`
+Product: pay-per-request on the XRPL AI Hub via x402 (0.01 RLUSD, roughly one cent, on core routes). Live API: https://api.agentweather.io · Discovery: `/.well-known/x402` · Free sample: `/v1/sample/yesterday`
 
 Help grow the history: contribute signals or data (agents and people welcome) so the record is deep enough to support forecasts and predictions later.
 
@@ -30,7 +30,7 @@ Help grow the history: contribute signals or data (agents and people welcome) so
 | | |
 |---|---|
 | **Endpoint** | `GET https://api.agentweather.io/v1/agent-weather/current` (POST behaves identically) |
-| **Price** | `0.0067 XRP` (6700 drops) **or** `0.01 RLUSD` per call |
+| **Price** | `0.01 RLUSD` per call (other routes: see [`openapi.yaml`](./openapi.yaml) / live catalog) |
 | **Free sample** | `GET https://api.agentweather.io/v1/sample/yesterday`: yesterday's report in the same format, no payment |
 | **Protocol** | x402 v2, scheme `exact`, network `xrpl:0` (XRPL mainnet) |
 | **Pay to** | `rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ` |
@@ -41,7 +41,7 @@ Help grow the history: contribute signals or data (agents and people welcome) so
 | **Response** | `application/json`, matches [`schemas/report.schema.json`](./schemas/report.schema.json), cached up to 5 min |
 | **Rate limit** | 30 requests/min per IP on the paid route |
 
-1. An unpaid request returns `402 Payment Required`. The body and the `PAYMENT-REQUIRED` header (base64) list both price options and a fresh single-use `invoiceId` ([example](./examples/402-response.json)).
+1. An unpaid request returns `402 Payment Required`. The body and the `PAYMENT-REQUIRED` header (base64) list the RLUSD `accepts[]` entry and a fresh single-use `invoiceId` ([example](./examples/402-response.json)).
 2. Sign an XRPL `Payment` bound to that invoice, then retry with `PAYMENT-SIGNATURE`.
 3. You receive the report ([example](./examples/sample-report.json)) plus a `PAYMENT-RESPONSE` header containing the XRPL transaction hash, which is your receipt.
 
@@ -84,11 +84,21 @@ npm i x402-xrpl xrpl
 import { x402Fetch, decodePaymentResponseHeader } from "x402-xrpl";
 import { Wallet } from "xrpl";
 
+// RLUSD on XRPL mainnet (40-hex currency code). Wallet needs an RLUSD trust line + balance.
+const RLUSD = "524C555344000000000000000000000000000000";
+
 const fetchPaid = x402Fetch({
-  wallet: Wallet.fromSeed(process.env.XRPL_SEED!), // use a dedicated, low-balance agent wallet
+  wallet: Wallet.fromSeed(process.env.XRPL_SEED!), // dedicated, low-balance agent wallet
   network: "xrpl:0",
   invoiceBinding: "invoice_id",
-  maxValue: "10000", // refuse to pay more than 0.01 XRP
+  // maxValue is compared numerically to accepts[].amount. For RLUSD that amount is a decimal
+  // value string (not drops), so "0.01" refuses anything above 0.01 RLUSD.
+  maxValue: "0.01",
+  paymentRequirementsSelector: (accepts) => {
+    const r = accepts.find((a) => a.scheme === "exact" && a.network === "xrpl:0" && a.asset === RLUSD);
+    if (!r) throw new Error("no RLUSD option offered");
+    return r;
+  },
 });
 
 const res = await fetchPaid("https://api.agentweather.io/v1/agent-weather/current");
@@ -128,12 +138,12 @@ curl -s https://api.agentweather.io/healthz | jq
 
 ## Pricing
 
-| Resource | XRP | RLUSD |
-|---|---|---|
-| `/v1/agent-weather/current` | 0.0067 XRP (6700 drops) | 0.01 RLUSD |
-| `/v1/sample/yesterday` | free | free |
+| Resource | Price |
+|---|---|
+| `/v1/agent-weather/current` | 0.01 RLUSD |
+| `/v1/sample/yesterday` | free |
 
-Other paid resources (x402 activity, pulse signals, merchant profiles, endpoint health, price index) are listed with their prices in [`openapi.yaml`](./openapi.yaml). The XRP amount is re-priced from the XRP/USD rate when it moves 10% or more. The buyer also pays the XRPL network fee (typically ~10 drops). The live [`/.well-known/x402`](https://api.agentweather.io/.well-known/x402) catalog is the source of truth.
+Other paid resources (x402 activity, pulse signals, merchant profiles, endpoint health, price index) are listed with their RLUSD prices in [`openapi.yaml`](./openapi.yaml). The buyer also pays the XRPL network fee (typically ~10 drops). The live [`/.well-known/x402`](https://api.agentweather.io/.well-known/x402) catalog is the source of truth.
 
 ## Links
 
