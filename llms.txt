@@ -9,6 +9,12 @@ Key facts:
 - Free sample (no payment): GET https://api.agentweather.io/v1/sample/yesterday returns the stored report from about 24 hours ago in the same JSON format, with a `sample` block marking it as free and not live
 - Response: application/json, cached up to 5 minutes, with per-source timestamps, data gaps, and modeled fields flagged
 
+## Model-metrics directory (new in 1.3.0)
+- Free index: GET https://api.agentweather.io/v1/models (OpenRouter-listed AI models: vendor, categories, modalities, context length, price per 1M tokens, expiration date, first_seen, vendor status; filters ?vendor= ?category= ?q=, paging ?limit= ?offset=)
+- Free day-old change summary: GET https://api.agentweather.io/v1/sample/models-yesterday
+- Paid, 0.01 RLUSD each via x402: GET https://api.agentweather.io/v1/models/report?id={id} (one model) and GET https://api.agentweather.io/v1/models/category/{name} (reasoning, coding, vision-input, image-output, audio, retiring-soon, price-moved, free-tier)
+- Conditions reports, not rankings; derived values carry their formula; vendor status is "unknown" where a vendor has no free status feed. Sources: OpenRouter public models list, vendor status feeds
+
 ## Docs
 - [README](https://github.com/agentweather/agent-weather/blob/main/README.md): overview, quickstart, pricing
 - [OpenAPI spec](https://github.com/agentweather/agent-weather/blob/main/openapi.yaml): OpenAPI 3.1 spec, including the 402 response

@@ -1,7 +1,7 @@
 {
   "x402Version": 2,
   "name": "Agent Weather",
-  "description": "Pay-per-request JSON conditions report on the AI-agent ecosystem, framed as weather. Covers agent-framework GitHub repos, AI provider status and outages, MCP Registry activity, npm adoption of MCP and x402 packages, and XRPL mainnet health, with sources, timestamps, data gaps and a modeled confidence score. Paid in XRP or RLUSD over x402 on the XRP Ledger.",
+  "description": "Weather is the state of a system in flux: observed, forecast, acted on. Agent Weather applies meteorological methods—observation networks, pressure, fronts, storms, climate vs weather, ensemble forecasting, confidence intervals, and alerts—to the collective behavior of AI agents at scale. We gather verifiable signals (frameworks and marketplaces, on-chain agent and x402 payments, public API and usage stats, GitHub activity, agent directories) into near real-time conditions reports: structured JSON with sources, timestamps, and confidence; modeled or estimated values labeled. Indexed on the XRPL AI Hub; pay per request via x402 on the XRP Ledger (0.01 RLUSD (roughly one cent) on core routes).",
   "website": "https://api.agentweather.io",
   "resources": [
     {
@@ -14,23 +14,17 @@
       ],
       "type": "http",
       "name": "Agent Weather: current conditions",
-      "description": "Current conditions snapshot: GitHub stats for 6 agent frameworks (LangChain, LangGraph, AutoGen, CrewAI, OpenAI Agents SDK, MCP servers), OpenAI/Anthropic/GitHub/Cursor status and incidents, MCP Registry entries updated in the last hour, npm weekly downloads (@modelcontextprotocol/sdk, @x402/core, @x402/xrpl) and XRPL mainnet server_info. Weather-style indices (visibility, pressure), per-source timestamps, data gaps and modeled confidence. JSON, cached up to 5 minutes.",
+      "description": "Current conditions snapshot: GitHub stats for 6 agent frameworks (LangChain, LangGraph, AutoGen, CrewAI, OpenAI Agents SDK, MCP servers), OpenAI/Anthropic/GitHub/Cursor status and incidents, MCP Registry entries updated in the last hour, npm weekly downloads (@modelcontextprotocol/sdk, @x402/core, @x402/xrpl) and XRPL mainnet server_info. Weather-style indices (visibility, pressure), per-source timestamps, data gaps and a confidence score (not yet calibrated) plus a separate data-quality score. Also: x402 payment activity on XRPL mainnet from our own ledger scan (t54-tagged payments, volume per asset, unique payers/merchants, heuristic real-vs-automated split with per-merchant concentration), plus 24h/7d baselines, baseline-relative temperature/pressure and fronts. JSON, cached up to 5 minutes.",
       "mimeType": "application/json",
       "network": "xrpl:0",
       "scheme": "exact",
       "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
-      "asset": "XRP",
-      "amount": "10000",
-      "unit": "drops",
+      "asset": "524C555344000000000000000000000000000000",
+      "symbol": "RLUSD",
+      "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+      "amount": "0.01",
+      "unit": "value",
       "accepts": [
-        {
-          "scheme": "exact",
-          "network": "xrpl:0",
-          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
-          "asset": "XRP",
-          "amount": "10000",
-          "unit": "drops"
-        },
         {
           "scheme": "exact",
           "network": "xrpl:0",
@@ -47,6 +41,378 @@
         "areFeesSponsored": false,
         "invoice": "fresh invoiceId per 402 response"
       }
+    },
+    {
+      "url": "https://api.agentweather.io/v1/agent-weather/x402-activity",
+      "resource": "https://api.agentweather.io/v1/agent-weather/x402-activity",
+      "method": "GET",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "type": "http",
+      "name": "Agent Weather: x402 activity on XRPL",
+      "description": "x402 payment activity on XRPL mainnet from our own validated-ledger scan (Payments tagged with the t54 facilitator SourceTag 804681468): payments and delivered volume per asset (XRP, RLUSD, other tokens) for the last 1h / 24h / 7d, hourly and daily series, unique payers and merchants, top and new merchants, coverage window, sample transactions with explorer links, a heuristic real-vs-automated split (all / automated_cluster / organic_candidate from a payer-cluster classifier: creation batches, funding lineage, timing regularity, uniform-random amounts) with per-payee concentration (HHI, top-payer share), and explicit caveats. JSON, cached up to 60 seconds.",
+      "mimeType": "application/json",
+      "network": "xrpl:0",
+      "scheme": "exact",
+      "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+      "asset": "524C555344000000000000000000000000000000",
+      "symbol": "RLUSD",
+      "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+      "amount": "0.01",
+      "unit": "value",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.01",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "url": "https://api.agentweather.io/v1/pulse/storm",
+      "resource": "https://api.agentweather.io/v1/pulse/storm",
+      "method": "GET",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "type": "http",
+      "name": "Agent Weather pulse: storm",
+      "description": "Tiny loop-safe signal: is the AI-agent ecosystem stormy right now? Returns storm (boolean), level (calm/breezy/unsettled/storm/unknown), one key reason, asOf and sources. Combines OpenAI/Anthropic/GitHub/Cursor status pages, t54 x402 facilitator health on XRPL and fronts from our 15-minute snapshots. Cached up to 60 s.",
+      "mimeType": "application/json",
+      "network": "xrpl:0",
+      "scheme": "exact",
+      "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+      "asset": "524C555344000000000000000000000000000000",
+      "symbol": "RLUSD",
+      "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+      "amount": "0.001",
+      "unit": "value",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.001",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "url": "https://api.agentweather.io/v1/pulse/facilitator",
+      "resource": "https://api.agentweather.io/v1/pulse/facilitator",
+      "method": "GET",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "type": "http",
+      "name": "Agent Weather pulse: x402 facilitator",
+      "description": "Tiny loop-safe preflight: is the t54 x402 facilitator on XRPL mainnet healthy? Returns ok (boolean), level (ok/degraded/down/unknown), one key reason, asOf and sources, from /supported reachability (checked every 5 min) and our own ledger scan (on-ledger success rate, fee spikes, tagged-volume drop), plus the share of known x402 endpoints answering with a valid 402. Cached up to 30 s.",
+      "mimeType": "application/json",
+      "network": "xrpl:0",
+      "scheme": "exact",
+      "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+      "asset": "524C555344000000000000000000000000000000",
+      "symbol": "RLUSD",
+      "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+      "amount": "0.001",
+      "unit": "value",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.001",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "url": "https://api.agentweather.io/v1/pulse/providers",
+      "resource": "https://api.agentweather.io/v1/pulse/providers",
+      "method": "GET",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "type": "http",
+      "name": "Agent Weather pulse: AI providers",
+      "description": "Tiny loop-safe signal: are OpenAI, Anthropic, GitHub and Cursor degraded? Returns degraded (boolean), level (operational/minor/major/critical), one key reason, per-provider Statuspage indicator, asOf and sources. Cached up to 60 s.",
+      "mimeType": "application/json",
+      "network": "xrpl:0",
+      "scheme": "exact",
+      "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+      "asset": "524C555344000000000000000000000000000000",
+      "symbol": "RLUSD",
+      "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+      "amount": "0.001",
+      "unit": "value",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.001",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "url": "https://api.agentweather.io/v1/merchant/{address}",
+      "resource": "https://api.agentweather.io/v1/merchant/{address}",
+      "method": "GET",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "type": "http",
+      "name": "Agent Weather: x402 merchant integrity profile",
+      "description": "Facts about one XRPL x402 payee (GET /v1/merchant/{r-address}): account age, first funder and Domain field, payments and unique payers in the last 24h from our own ledger scan, payer concentration (HHI, top-payer share), heuristic automated-cluster share, payer creation batches, funding links between payers and the merchant, timing regularity, amount distribution, endpoint liveness and valid 402 from one unpaid GET, and a 0-100 score with every component and its method shown. Directory listing is reported as unknown. Invalid addresses are rejected with 400 before any payment. JSON, precomputed every 30 min for active payees.",
+      "mimeType": "application/json",
+      "network": "xrpl:0",
+      "scheme": "exact",
+      "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+      "asset": "524C555344000000000000000000000000000000",
+      "symbol": "RLUSD",
+      "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+      "amount": "0.03",
+      "unit": "value",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.03",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      },
+      "pathParams": {
+        "address": {
+          "type": "string",
+          "pattern": "^r[1-9A-HJ-NP-Za-km-z]{24,34}$",
+          "description": "XRPL classic address of the payee (payTo) to profile"
+        }
+      }
+    },
+    {
+      "url": "https://api.agentweather.io/v1/health/report",
+      "resource": "https://api.agentweather.io/v1/health/report",
+      "method": "GET",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "type": "http",
+      "name": "Agent Weather: x402 endpoint and facilitator health",
+      "description": "Health of known x402 endpoints on XRPL and of the t54 facilitator: per-endpoint liveness and valid-402 check from one unpaid GET every 20 min (merchants' own /.well-known/x402 catalogs plus endpoints we discovered), price, asset, network and payTo drift versus the previous check, catalog reachability, and facilitator health from /supported reachability and our own ledger scan (success rate, fee spikes, tagged volume). JSON with sources and data gaps.",
+      "mimeType": "application/json",
+      "network": "xrpl:0",
+      "scheme": "exact",
+      "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+      "asset": "524C555344000000000000000000000000000000",
+      "symbol": "RLUSD",
+      "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+      "amount": "0.01",
+      "unit": "value",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.01",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "url": "https://api.agentweather.io/v1/price-index",
+      "resource": "https://api.agentweather.io/v1/price-index",
+      "method": "GET",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "type": "http",
+      "name": "Agent Weather: x402 price index (XRPL)",
+      "description": "Price index of live x402 resources payable on XRPL mainnet: cheapest live provider per capability category, USD-normalised price distribution (quantiles and bands), every live endpoint with its rails, and price changes since the previous check. Derived from the valid 402 responses our health checker receives every 20 min; XRP prices are converted with a documented XRP/USD median rate (estimate). JSON.",
+      "mimeType": "application/json",
+      "network": "xrpl:0",
+      "scheme": "exact",
+      "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+      "asset": "524C555344000000000000000000000000000000",
+      "symbol": "RLUSD",
+      "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+      "amount": "0.005",
+      "unit": "value",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.005",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "url": "https://api.agentweather.io/v1/models/report?id={id}",
+      "resource": "https://api.agentweather.io/v1/models/report?id={id}",
+      "method": "GET",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "type": "http",
+      "name": "Agent Weather: model conditions report",
+      "description": "Conditions report for one AI model listed on OpenRouter (GET /v1/models/report?id={model id}): current input/output prices per 1M tokens with 24h and 7d change (absolute and %), standard job cost (10,000 input + 1,000 output tokens, formula shown), context length and modalities, the vendor's own status page indicator and active incidents (unknown when the vendor has no free JSON status feed), listing events in the last 24h and 7d (added, removed, price change, expiration date), days until expiration, sources, timestamps and data age, plus a one-line summary. Every derived value carries its formula. A conditions report, not a ranking: no statement about how well a model performs. Unknown ids get 400 before any payment. JSON.",
+      "mimeType": "application/json",
+      "network": "xrpl:0",
+      "scheme": "exact",
+      "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+      "asset": "524C555344000000000000000000000000000000",
+      "symbol": "RLUSD",
+      "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+      "amount": "0.01",
+      "unit": "value",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.01",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      },
+      "queryParams": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "OpenRouter model id from the free index GET /v1/models, e.g. openai/gpt-4o"
+        }
+      }
+    },
+    {
+      "url": "https://api.agentweather.io/v1/models/category/{name}",
+      "resource": "https://api.agentweather.io/v1/models/category/{name}",
+      "method": "GET",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "type": "http",
+      "name": "Agent Weather: model category conditions",
+      "description": "Conditions across one category of AI models listed on OpenRouter (GET /v1/models/category/{name}; name one of reasoning, coding, vision-input, image-output, audio, retiring-soon, price-moved, free-tier): counts, price changes in the last 24h, new and removed models, models with an expiration date, vendor disturbances from the vendors' own status pages, and every model in the category with its standard job cost (10,000 input + 1,000 output tokens) as a plain fact. Categories come only from declared metadata, and the rule is stated in the response. Default order is by id; ?sort=cost orders by cost and is labelled \"sorted by cost, not quality\". Unknown categories get 400 before any payment. JSON.",
+      "mimeType": "application/json",
+      "network": "xrpl:0",
+      "scheme": "exact",
+      "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+      "asset": "524C555344000000000000000000000000000000",
+      "symbol": "RLUSD",
+      "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+      "amount": "0.01",
+      "unit": "value",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.01",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      },
+      "pathParams": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "reasoning",
+            "coding",
+            "vision-input",
+            "image-output",
+            "audio",
+            "retiring-soon",
+            "price-moved",
+            "free-tier"
+          ],
+          "description": "model category (rule stated in the response)"
+        }
+      }
     }
   ],
   "items": [
@@ -55,18 +421,334 @@
       "method": "GET",
       "type": "http",
       "url": "https://api.agentweather.io/v1/agent-weather/current",
-      "description": "Current conditions snapshot: GitHub stats for 6 agent frameworks (LangChain, LangGraph, AutoGen, CrewAI, OpenAI Agents SDK, MCP servers), OpenAI/Anthropic/GitHub/Cursor status and incidents, MCP Registry entries updated in the last hour, npm weekly downloads (@modelcontextprotocol/sdk, @x402/core, @x402/xrpl) and XRPL mainnet server_info. Weather-style indices (visibility, pressure), per-source timestamps, data gaps and modeled confidence. JSON, cached up to 5 minutes.",
+      "description": "Current conditions snapshot: GitHub stats for 6 agent frameworks (LangChain, LangGraph, AutoGen, CrewAI, OpenAI Agents SDK, MCP servers), OpenAI/Anthropic/GitHub/Cursor status and incidents, MCP Registry entries updated in the last hour, npm weekly downloads (@modelcontextprotocol/sdk, @x402/core, @x402/xrpl) and XRPL mainnet server_info. Weather-style indices (visibility, pressure), per-source timestamps, data gaps and a confidence score (not yet calibrated) plus a separate data-quality score. Also: x402 payment activity on XRPL mainnet from our own ledger scan (t54-tagged payments, volume per asset, unique payers/merchants, heuristic real-vs-automated split with per-merchant concentration), plus 24h/7d baselines, baseline-relative temperature/pressure and fronts. JSON, cached up to 5 minutes.",
       "mimeType": "application/json",
+      "serviceName": "Agent Weather",
+      "tags": [
+        "ai-agents",
+        "status",
+        "mcp",
+        "x402",
+        "xrpl"
+      ],
+      "iconUrl": "https://api.agentweather.io/icon.png",
       "name": "Agent Weather: current conditions",
       "accepts": [
         {
           "scheme": "exact",
           "network": "xrpl:0",
           "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
-          "asset": "XRP",
-          "amount": "10000",
-          "unit": "drops"
-        },
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.01",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "resource": "https://api.agentweather.io/v1/agent-weather/x402-activity",
+      "method": "GET",
+      "type": "http",
+      "url": "https://api.agentweather.io/v1/agent-weather/x402-activity",
+      "description": "x402 payment activity on XRPL mainnet from our own validated-ledger scan (Payments tagged with the t54 facilitator SourceTag 804681468): payments and delivered volume per asset (XRP, RLUSD, other tokens) for the last 1h / 24h / 7d, hourly and daily series, unique payers and merchants, top and new merchants, coverage window, sample transactions with explorer links, a heuristic real-vs-automated split (all / automated_cluster / organic_candidate from a payer-cluster classifier: creation batches, funding lineage, timing regularity, uniform-random amounts) with per-payee concentration (HHI, top-payer share), and explicit caveats. JSON, cached up to 60 seconds.",
+      "mimeType": "application/json",
+      "serviceName": "Agent Weather",
+      "tags": [
+        "ai-agents",
+        "status",
+        "mcp",
+        "x402",
+        "xrpl"
+      ],
+      "iconUrl": "https://api.agentweather.io/icon.png",
+      "name": "Agent Weather: x402 activity on XRPL",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.01",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "resource": "https://api.agentweather.io/v1/pulse/storm",
+      "method": "GET",
+      "type": "http",
+      "url": "https://api.agentweather.io/v1/pulse/storm",
+      "description": "Tiny loop-safe signal: is the AI-agent ecosystem stormy right now? Returns storm (boolean), level (calm/breezy/unsettled/storm/unknown), one key reason, asOf and sources. Combines OpenAI/Anthropic/GitHub/Cursor status pages, t54 x402 facilitator health on XRPL and fronts from our 15-minute snapshots. Cached up to 60 s.",
+      "mimeType": "application/json",
+      "serviceName": "Agent Weather",
+      "tags": [
+        "ai-agents",
+        "status",
+        "mcp",
+        "x402",
+        "xrpl"
+      ],
+      "iconUrl": "https://api.agentweather.io/icon.png",
+      "name": "Agent Weather pulse: storm",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.001",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "resource": "https://api.agentweather.io/v1/pulse/facilitator",
+      "method": "GET",
+      "type": "http",
+      "url": "https://api.agentweather.io/v1/pulse/facilitator",
+      "description": "Tiny loop-safe preflight: is the t54 x402 facilitator on XRPL mainnet healthy? Returns ok (boolean), level (ok/degraded/down/unknown), one key reason, asOf and sources, from /supported reachability (checked every 5 min) and our own ledger scan (on-ledger success rate, fee spikes, tagged-volume drop), plus the share of known x402 endpoints answering with a valid 402. Cached up to 30 s.",
+      "mimeType": "application/json",
+      "serviceName": "Agent Weather",
+      "tags": [
+        "ai-agents",
+        "status",
+        "mcp",
+        "x402",
+        "xrpl"
+      ],
+      "iconUrl": "https://api.agentweather.io/icon.png",
+      "name": "Agent Weather pulse: x402 facilitator",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.001",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "resource": "https://api.agentweather.io/v1/pulse/providers",
+      "method": "GET",
+      "type": "http",
+      "url": "https://api.agentweather.io/v1/pulse/providers",
+      "description": "Tiny loop-safe signal: are OpenAI, Anthropic, GitHub and Cursor degraded? Returns degraded (boolean), level (operational/minor/major/critical), one key reason, per-provider Statuspage indicator, asOf and sources. Cached up to 60 s.",
+      "mimeType": "application/json",
+      "serviceName": "Agent Weather",
+      "tags": [
+        "ai-agents",
+        "status",
+        "mcp",
+        "x402",
+        "xrpl"
+      ],
+      "iconUrl": "https://api.agentweather.io/icon.png",
+      "name": "Agent Weather pulse: AI providers",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.001",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "resource": "https://api.agentweather.io/v1/merchant/{address}",
+      "method": "GET",
+      "type": "http",
+      "url": "https://api.agentweather.io/v1/merchant/{address}",
+      "description": "Facts about one XRPL x402 payee (GET /v1/merchant/{r-address}): account age, first funder and Domain field, payments and unique payers in the last 24h from our own ledger scan, payer concentration (HHI, top-payer share), heuristic automated-cluster share, payer creation batches, funding links between payers and the merchant, timing regularity, amount distribution, endpoint liveness and valid 402 from one unpaid GET, and a 0-100 score with every component and its method shown. Directory listing is reported as unknown. Invalid addresses are rejected with 400 before any payment. JSON, precomputed every 30 min for active payees.",
+      "mimeType": "application/json",
+      "serviceName": "Agent Weather",
+      "tags": [
+        "ai-agents",
+        "status",
+        "mcp",
+        "x402",
+        "xrpl"
+      ],
+      "iconUrl": "https://api.agentweather.io/icon.png",
+      "name": "Agent Weather: x402 merchant integrity profile",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.03",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "resource": "https://api.agentweather.io/v1/health/report",
+      "method": "GET",
+      "type": "http",
+      "url": "https://api.agentweather.io/v1/health/report",
+      "description": "Health of known x402 endpoints on XRPL and of the t54 facilitator: per-endpoint liveness and valid-402 check from one unpaid GET every 20 min (merchants' own /.well-known/x402 catalogs plus endpoints we discovered), price, asset, network and payTo drift versus the previous check, catalog reachability, and facilitator health from /supported reachability and our own ledger scan (success rate, fee spikes, tagged volume). JSON with sources and data gaps.",
+      "mimeType": "application/json",
+      "serviceName": "Agent Weather",
+      "tags": [
+        "ai-agents",
+        "status",
+        "mcp",
+        "x402",
+        "xrpl"
+      ],
+      "iconUrl": "https://api.agentweather.io/icon.png",
+      "name": "Agent Weather: x402 endpoint and facilitator health",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.01",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "resource": "https://api.agentweather.io/v1/price-index",
+      "method": "GET",
+      "type": "http",
+      "url": "https://api.agentweather.io/v1/price-index",
+      "description": "Price index of live x402 resources payable on XRPL mainnet: cheapest live provider per capability category, USD-normalised price distribution (quantiles and bands), every live endpoint with its rails, and price changes since the previous check. Derived from the valid 402 responses our health checker receives every 20 min; XRP prices are converted with a documented XRP/USD median rate (estimate). JSON.",
+      "mimeType": "application/json",
+      "serviceName": "Agent Weather",
+      "tags": [
+        "ai-agents",
+        "status",
+        "mcp",
+        "x402",
+        "xrpl"
+      ],
+      "iconUrl": "https://api.agentweather.io/icon.png",
+      "name": "Agent Weather: x402 price index (XRPL)",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.005",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "resource": "https://api.agentweather.io/v1/models/report?id={id}",
+      "method": "GET",
+      "type": "http",
+      "url": "https://api.agentweather.io/v1/models/report?id={id}",
+      "description": "Conditions report for one AI model listed on OpenRouter (GET /v1/models/report?id={model id}): current input/output prices per 1M tokens with 24h and 7d change (absolute and %), standard job cost (10,000 input + 1,000 output tokens, formula shown), context length and modalities, the vendor's own status page indicator and active incidents (unknown when the vendor has no free JSON status feed), listing events in the last 24h and 7d (added, removed, price change, expiration date), days until expiration, sources, timestamps and data age, plus a one-line summary. Every derived value carries its formula. A conditions report, not a ranking: no statement about how well a model performs. Unknown ids get 400 before any payment. JSON.",
+      "mimeType": "application/json",
+      "serviceName": "Agent Weather",
+      "tags": [
+        "ai-agents",
+        "status",
+        "mcp",
+        "x402",
+        "xrpl"
+      ],
+      "iconUrl": "https://api.agentweather.io/icon.png",
+      "name": "Agent Weather: model conditions report",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "xrpl:0",
+          "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
+          "asset": "524C555344000000000000000000000000000000",
+          "symbol": "RLUSD",
+          "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+          "amount": "0.01",
+          "unit": "value"
+        }
+      ],
+      "extra": {
+        "sourceTag": 804681468,
+        "areFeesSponsored": false,
+        "invoice": "fresh invoiceId per 402 response"
+      }
+    },
+    {
+      "resource": "https://api.agentweather.io/v1/models/category/{name}",
+      "method": "GET",
+      "type": "http",
+      "url": "https://api.agentweather.io/v1/models/category/{name}",
+      "description": "Conditions across one category of AI models listed on OpenRouter (GET /v1/models/category/{name}; name one of reasoning, coding, vision-input, image-output, audio, retiring-soon, price-moved, free-tier): counts, price changes in the last 24h, new and removed models, models with an expiration date, vendor disturbances from the vendors' own status pages, and every model in the category with its standard job cost (10,000 input + 1,000 output tokens) as a plain fact. Categories come only from declared metadata, and the rule is stated in the response. Default order is by id; ?sort=cost orders by cost and is labelled \"sorted by cost, not quality\". Unknown categories get 400 before any payment. JSON.",
+      "mimeType": "application/json",
+      "serviceName": "Agent Weather",
+      "tags": [
+        "ai-agents",
+        "status",
+        "mcp",
+        "x402",
+        "xrpl"
+      ],
+      "iconUrl": "https://api.agentweather.io/icon.png",
+      "name": "Agent Weather: model category conditions",
+      "accepts": [
         {
           "scheme": "exact",
           "network": "xrpl:0",
@@ -88,5 +770,5 @@
   "facilitators": [
     "https://xrpl-facilitator-mainnet.t54.ai"
   ],
-  "updatedAt": "2026-09-27T01:16:48.568Z"
+  "updatedAt": "2026-10-07T13:57:13.472Z"
 }

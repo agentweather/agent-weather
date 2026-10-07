@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Agent Weather API
-  version: 1.2.0
+  version: 1.3.0
   summary: Forecasts for the agent economy. Pay-per-call conditions reports on the AI-agent ecosystem, paid via x402 on the XRP Ledger.
   description: |
     Agent Weather sells a JSON "conditions report" on the AI-agent ecosystem per request, paid with
@@ -23,6 +23,13 @@ info:
 
     To see the format before paying, `GET /v1/sample/yesterday` (free, no payment) returns the stored
     conditions report from about 24 hours ago with a `sample` block marking it as free and not live.
+
+    **Model-metrics directory (new in 1.3.0).** Conditions reports on AI models listed on OpenRouter's public
+    model list: prices per 1M tokens and their 24h/7d changes, a standard job cost (10,000 input + 1,000 output
+    tokens), context length, modalities, listing events, expiration dates and the vendor's own status page.
+    Free: `GET /v1/models`, `GET /v1/sample/models-yesterday`. Paid (0.01 RLUSD each): `GET /v1/models/report?id=`
+    and `GET /v1/models/category/{name}`. These are conditions reports, not rankings: no statement about how
+    well a model performs. Every derived value carries its formula in the response.
   contact: { name: Agent Weather, url: 'https://github.com/agentweather/agent-weather' }
   license: { name: CC-BY-4.0, url: 'https://creativecommons.org/licenses/by/4.0/' }
   x-logo: { url: 'https://raw.githubusercontent.com/agentweather/agent-weather/main/assets/logo.png' }
@@ -37,7 +44,8 @@ info:
     (yesterday's stored report, same JSON format, not live), /healthz, /.well-known/x402, /openapi.json,
     /llms.txt, /v1/methodology. Other paid resources, same flow and headers: /v1/agent-weather/x402-activity,
     /v1/pulse/storm, /v1/pulse/facilitator, /v1/pulse/providers, /v1/merchant/{address}, /v1/health/report,
-    /v1/price-index (prices in /.well-known/x402).
+    /v1/price-index, /v1/models/report?id={id}, /v1/models/category/{name} (prices in /.well-known/x402).
+    Free model directory: /v1/models (index) and /v1/sample/models-yesterday (day-old change summary).
 externalDocs: { description: Repository and docs, url: 'https://github.com/agentweather/agent-weather' }
 # No API keys or auth: access is granted per request by an x402 payment (PAYMENT-SIGNATURE header).
 security: []
@@ -897,6 +905,467 @@ paths:
         '200':
           description: Agent card JSON
           content: { application/json: { schema: { type: object } } }
+  # ---- Model-metrics directory (new in 1.3.0): conditions reports on AI models, not rankings ----
+  /v1/models:
+    get:
+      tags:
+      - discovery
+      operationId: getModels
+      summary: 'Model directory index (free): OpenRouter-listed models with vendor, categories, modalities, context length, prices per
+        1M tokens, expiration date, first_seen and vendor status'
+      security: []
+      description: Free directory index of AI models listed on OpenRouter's public model list (collected hourly). Conditions, not rankings.
+        Derived fields carry their formula in `derived_fields`; category rules are in `category_rules`. Sorted by id.
+      parameters:
+      - name: vendor
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Exact vendor (id prefix, e.g. openai)
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - reasoning
+          - coding
+          - vision-input
+          - image-output
+          - audio
+          - retiring-soon
+          - price-moved
+          - free-tier
+        description: Category (rule in category_rules)
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+        description: Case-insensitive substring of id or name
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+          default: 100
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      responses:
+        '200':
+          description: Directory page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelIndex'
+        '400':
+          description: Unknown category
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    const: unknown_category
+                  categories:
+                    type: array
+                    items:
+                      type: string
+  /v1/sample/models-yesterday:
+    get:
+      tags:
+      - discovery
+      operationId: getSampleModelsYesterday
+      summary: 'Free sample: the model directory''s day-old change summary (free, no payment)'
+      security: []
+      description: 'Changes observed in the model directory during the previous calendar day (America/Chicago): models added and removed,
+        price changes, expiration-date changes and vendor status changes, with coverage. Not live data and not a paid product. Cached
+        hourly.'
+      responses:
+        '200':
+          description: Day-old change summary with a `sample` block
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelsSample'
+  /v1/models/report:
+    get:
+      tags:
+      - paid
+      operationId: getModelsReport
+      summary: 'Agent Weather: model conditions report (paid, 0.01 RLUSD)'
+      description: 'Conditions report for one AI model listed on OpenRouter (GET /v1/models/report?id={model id}): current input/output
+        prices per 1M tokens with 24h and 7d change (absolute and %), standard job cost (10,000 input + 1,000 output tokens, formula shown),
+        context length and modalities, the vendor''s own status page indicator and active incidents (unknown when the vendor has no free
+        JSON status feed), listing events in the last 24h and 7d (added, removed, price change, expiration date), days until expiration,
+        sources, timestamps and data age, plus a one-line summary. Every derived value carries its formula. A conditions report, not a
+        ranking: no statement about how well a model performs. Unknown ids get 400 before any payment. JSON.'
+      parameters:
+      - name: id
+        in: query
+        required: true
+        description: OpenRouter model id from the free index GET /v1/models (e.g. openai/gpt-4o). Unknown or missing ids get 400 before
+          any payment.
+        schema:
+          type: string
+          maxLength: 200
+      - $ref: '#/components/parameters/PaymentSignature'
+      - $ref: '#/components/parameters/XPayment'
+      responses:
+        '200':
+          description: Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.
+          headers:
+            PAYMENT-RESPONSE:
+              description: Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema:
+                type: string
+            X-Facilitator:
+              description: Which facilitator settled (`t54`). Debug aid.
+              schema:
+                type: string
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ModelReport'
+                - type: object
+                  properties:
+                    payment:
+                      $ref: '#/components/schemas/PaymentReceipt'
+        '400':
+          description: 'Invalid input (nothing was charged): `unknown_or_missing_model_id`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    const: unknown_or_missing_model_id
+                  hint:
+                    type: string
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/Busy'
+      x-payment-info:
+        price:
+          mode: fixed
+          currency: USD
+          amount: '0.01'
+        protocols:
+        - x402: {}
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+        - asset: 524C555344000000000000000000000000000000
+          symbol: RLUSD
+          issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+          amount: '0.01'
+          unit: value
+          display: 0.01 RLUSD
+    post:
+      tags:
+      - paid
+      operationId: postModelsReport
+      summary: Same as GET (request body is ignored)
+      description: POST behaves exactly like GET, with the same invoice/verify/settle flow. The request body is ignored.
+      parameters:
+      - name: id
+        in: query
+        required: true
+        description: OpenRouter model id from the free index GET /v1/models (e.g. openai/gpt-4o). Unknown or missing ids get 400 before
+          any payment.
+        schema:
+          type: string
+          maxLength: 200
+      - $ref: '#/components/parameters/PaymentSignature'
+      - $ref: '#/components/parameters/XPayment'
+      responses:
+        '200':
+          description: Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.
+          headers:
+            PAYMENT-RESPONSE:
+              description: Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema:
+                type: string
+            X-Facilitator:
+              description: Which facilitator settled (`t54`). Debug aid.
+              schema:
+                type: string
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ModelReport'
+                - type: object
+                  properties:
+                    payment:
+                      $ref: '#/components/schemas/PaymentReceipt'
+        '400':
+          description: 'Invalid input (nothing was charged): `unknown_or_missing_model_id`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    const: unknown_or_missing_model_id
+                  hint:
+                    type: string
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/Busy'
+      x-payment-info:
+        price:
+          mode: fixed
+          currency: USD
+          amount: '0.01'
+        protocols:
+        - x402: {}
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+        - asset: 524C555344000000000000000000000000000000
+          symbol: RLUSD
+          issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+          amount: '0.01'
+          unit: value
+          display: 0.01 RLUSD
+      requestBody:
+        required: false
+        description: Ignored. Send no body or {}.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              maxProperties: 0
+  /v1/models/category/{name}:
+    get:
+      tags:
+      - paid
+      operationId: getModelsCategoryName
+      summary: 'Agent Weather: model category conditions (paid, 0.01 RLUSD)'
+      description: 'Conditions across one category of AI models listed on OpenRouter (GET /v1/models/category/{name}; name one of reasoning,
+        coding, vision-input, image-output, audio, retiring-soon, price-moved, free-tier): counts, price changes in the last 24h, new
+        and removed models, models with an expiration date, vendor disturbances from the vendors'' own status pages, and every model in
+        the category with its standard job cost (10,000 input + 1,000 output tokens) as a plain fact. Categories come only from declared
+        metadata, and the rule is stated in the response. Default order is by id; ?sort=cost orders by cost and is labelled "sorted by
+        cost, not quality". Unknown categories get 400 before any payment. JSON.'
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: Category. Unknown categories get 400 before any payment.
+        schema:
+          type: string
+          enum:
+          - reasoning
+          - coding
+          - vision-input
+          - image-output
+          - audio
+          - retiring-soon
+          - price-moved
+          - free-tier
+      - name: sort
+        in: query
+        required: false
+        description: 'Omit for id order; `cost` orders by standard_job_cost_usd (labelled: sorted by cost, not quality).'
+        schema:
+          type: string
+          enum:
+          - cost
+      - $ref: '#/components/parameters/PaymentSignature'
+      - $ref: '#/components/parameters/XPayment'
+      responses:
+        '200':
+          description: Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.
+          headers:
+            PAYMENT-RESPONSE:
+              description: Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema:
+                type: string
+            X-Facilitator:
+              description: Which facilitator settled (`t54`). Debug aid.
+              schema:
+                type: string
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ModelCategory'
+                - type: object
+                  properties:
+                    payment:
+                      $ref: '#/components/schemas/PaymentReceipt'
+        '400':
+          description: 'Invalid input (nothing was charged): `unknown_category`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    const: unknown_category
+                  hint:
+                    type: string
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/Busy'
+      x-payment-info:
+        price:
+          mode: fixed
+          currency: USD
+          amount: '0.01'
+        protocols:
+        - x402: {}
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+        - asset: 524C555344000000000000000000000000000000
+          symbol: RLUSD
+          issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+          amount: '0.01'
+          unit: value
+          display: 0.01 RLUSD
+    post:
+      tags:
+      - paid
+      operationId: postModelsCategoryName
+      summary: Same as GET (request body is ignored)
+      description: POST behaves exactly like GET, with the same invoice/verify/settle flow. The request body is ignored.
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: Category. Unknown categories get 400 before any payment.
+        schema:
+          type: string
+          enum:
+          - reasoning
+          - coding
+          - vision-input
+          - image-output
+          - audio
+          - retiring-soon
+          - price-moved
+          - free-tier
+      - name: sort
+        in: query
+        required: false
+        description: 'Omit for id order; `cost` orders by standard_job_cost_usd (labelled: sorted by cost, not quality).'
+        schema:
+          type: string
+          enum:
+          - cost
+      - $ref: '#/components/parameters/PaymentSignature'
+      - $ref: '#/components/parameters/XPayment'
+      responses:
+        '200':
+          description: Payment settled and verified on-ledger. Returns the resource body with a `payment` receipt appended.
+          headers:
+            PAYMENT-RESPONSE:
+              description: Base64 JSON `{success, transaction, network, payer}`. `transaction` is the XRPL tx hash (your receipt).
+              schema:
+                type: string
+            X-Facilitator:
+              description: Which facilitator settled (`t54`). Debug aid.
+              schema:
+                type: string
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ModelCategory'
+                - type: object
+                  properties:
+                    payment:
+                      $ref: '#/components/schemas/PaymentReceipt'
+        '400':
+          description: 'Invalid input (nothing was charged): `unknown_category`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    const: unknown_category
+                  hint:
+                    type: string
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/Busy'
+      x-payment-info:
+        price:
+          mode: fixed
+          currency: USD
+          amount: '0.01'
+        protocols:
+        - x402: {}
+      x-x402:
+        network: xrpl:0
+        scheme: exact
+        payTo: rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ
+        facilitator: https://xrpl-facilitator-mainnet.t54.ai
+        options:
+        - asset: 524C555344000000000000000000000000000000
+          symbol: RLUSD
+          issuer: rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De
+          amount: '0.01'
+          unit: value
+          display: 0.01 RLUSD
+      requestBody:
+        required: false
+        description: Ignored. Send no body or {}.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              maxProperties: 0
 components:
   x-x402-pricing:
     network: xrpl:0
@@ -1285,3 +1754,402 @@ components:
           type: string
           format: date-time
           description: When the stored snapshot was taken (absent on the no_snapshot_for_prior_day body).
+    # ---- Model-metrics directory schemas (new in 1.3.0) ----
+    ModelIndex:
+      type: object
+      required:
+      - schema_version
+      - kind
+      - issued_at
+      - total
+      - offset
+      - limit
+      - models
+      - category_rules
+      - derived_fields
+      - sources
+      - data_age
+      properties:
+        schema_version:
+          type: string
+        kind:
+          type: string
+        note:
+          type: string
+        issued_at:
+          type: string
+        filters:
+          type: object
+        sort:
+          type: string
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+        returned:
+          type: integer
+        next:
+          type:
+          - string
+          - 'null'
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelIndexEntry'
+        category_rules:
+          type: object
+          additionalProperties:
+            type: string
+        derived_fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelDerivedField'
+        first_seen_note:
+          type: string
+        paid:
+          type: object
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelSource'
+        data_age:
+          $ref: '#/components/schemas/ModelDataAge'
+    ModelReport:
+      type: object
+      required:
+      - schema_version
+      - kind
+      - report_id
+      - issued_at
+      - summary
+      - model
+      - prices
+      - standard_job_cost_usd
+      - status
+      - events
+      - derived_fields
+      - sources
+      - data_age
+      - data_gaps
+      properties:
+        schema_version:
+          type: string
+        kind:
+          type: string
+          const: model conditions report
+        note:
+          type: string
+        report_id:
+          type: string
+        issued_at:
+          type: string
+        summary:
+          type: string
+        model:
+          type: object
+          properties:
+            id:
+              type: string
+            vendor:
+              type: string
+            categories:
+              type: array
+              items:
+                type: string
+            context_length:
+              type:
+              - integer
+              - 'null'
+            expiration_date:
+              type:
+              - string
+              - 'null'
+            days_until_expiration:
+              type:
+              - integer
+              - 'null'
+            first_seen:
+              type: string
+        prices:
+          type: object
+        standard_job_cost_usd:
+          type: object
+          properties:
+            value:
+              type:
+              - number
+              - 'null'
+            formula:
+              type: string
+        status:
+          type: object
+        events:
+          type: object
+          properties:
+            last_24h:
+              type: array
+              items:
+                $ref: '#/components/schemas/ModelEvent'
+            last_7d:
+              type: array
+              items:
+                $ref: '#/components/schemas/ModelEvent'
+        derived_fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelDerivedField'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelSource'
+        data_age:
+          $ref: '#/components/schemas/ModelDataAge'
+        data_gaps:
+          type: array
+    ModelCategory:
+      type: object
+      required:
+      - schema_version
+      - kind
+      - report_id
+      - issued_at
+      - category
+      - rule
+      - summary
+      - counts
+      - price_movers_24h
+      - new_models
+      - retiring_models
+      - disturbances
+      - sort
+      - models
+      - derived_fields
+      - sources
+      - data_age
+      properties:
+        schema_version:
+          type: string
+        kind:
+          type: string
+          const: category conditions report
+        category:
+          type: string
+        rule:
+          type: string
+        summary:
+          type: string
+        counts:
+          type: object
+        price_movers_24h:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelEvent'
+        new_models:
+          type: object
+        retiring_models:
+          type: array
+        disturbances:
+          type: object
+        sort:
+          type: object
+          properties:
+            by:
+              type: string
+            label:
+              type: string
+        models:
+          type: array
+        derived_fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelDerivedField'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelSource'
+        data_age:
+          $ref: '#/components/schemas/ModelDataAge'
+    ModelsSample:
+      type: object
+      required:
+      - sample
+      - schema_version
+      - summary
+      - coverage
+      - observed_events
+      properties:
+        sample:
+          type: object
+        schema_version:
+          type: string
+        summary:
+          type: string
+        coverage:
+          type: object
+        observed_events:
+          type: object
+        declared_created_in_window:
+          type: object
+        error:
+          type: string
+    ModelIndexEntry:
+      type: object
+      required:
+      - id
+      - vendor
+      - categories
+      - input_modalities
+      - output_modalities
+      - context_length
+      - price_in_usd_per_1m
+      - price_out_usd_per_1m
+      - expiration_date
+      - first_seen
+      - status
+      properties:
+        id:
+          type: string
+        name:
+          type:
+          - string
+          - 'null'
+        vendor:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+        input_modalities:
+          type: array
+          items:
+            type: string
+        output_modalities:
+          type: array
+          items:
+            type: string
+        context_length:
+          type:
+          - integer
+          - 'null'
+        price_in_usd_per_1m:
+          type:
+          - number
+          - 'null'
+          description: pricing.prompt × 1,000,000 (null when variable)
+        price_out_usd_per_1m:
+          type:
+          - number
+          - 'null'
+          description: pricing.completion × 1,000,000 (null when variable)
+        price_note:
+          type: string
+        expiration_date:
+          type:
+          - string
+          - 'null'
+        first_seen:
+          type: string
+        status:
+          type: string
+          enum:
+          - operational
+          - minor
+          - major
+          - critical
+          - maintenance
+          - unknown
+    ModelDerivedField:
+      type: object
+      required:
+      - field
+      - formula
+      properties:
+        field:
+          type: string
+        formula:
+          type: string
+    ModelSource:
+      type: object
+      required:
+      - name
+      - url
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        observed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    ModelDataAge:
+      type: object
+      properties:
+        models_snapshot_at:
+          type:
+          - string
+          - 'null'
+        models_snapshot_age_seconds:
+          type:
+          - number
+          - 'null'
+        vendor_status_oldest_check_at:
+          type:
+          - string
+          - 'null'
+        vendor_status_oldest_check_age_seconds:
+          type:
+          - number
+          - 'null'
+        collection_started_at:
+          type:
+          - string
+          - 'null'
+        cadence:
+          type: object
+        formula:
+          type: string
+    ModelEvent:
+      type: object
+      required:
+      - at
+      - type
+      - vendor
+      properties:
+        at:
+          type: string
+        type:
+          type: string
+          enum:
+          - model_added
+          - model_removed
+          - price_change
+          - expiration_set
+          - expiration_changed
+          - expiration_cleared
+          - vendor_status_change
+        id:
+          type: string
+        vendor:
+          type: string
+        field:
+          type: string
+        old_usd_per_1m:
+          type:
+          - number
+          - 'null'
+        new_usd_per_1m:
+          type:
+          - number
+          - 'null'
+        abs:
+          type:
+          - number
+          - 'null'
+        pct:
+          type:
+          - number
+          - 'null'
