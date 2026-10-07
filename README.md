@@ -193,6 +193,7 @@ One entry from `GET /v1/models` (trimmed):
 | File | Purpose |
 |---|---|
 | [`llms.txt`](./llms.txt) | LLM-oriented index of this project |
+| [`skills/agent-weather/SKILL.md`](./skills/agent-weather/SKILL.md) | Agent skill file (Claude/Cursor skill format): when and how to use Agent Weather |
 | [`openapi.yaml`](./openapi.yaml) | OpenAPI 3.1: every public endpoint, the 402 body, headers and error codes |
 | [`schemas/report.schema.json`](./schemas/report.schema.json) | JSON Schema (2020-12) for the report body |
 | [`docs/methodology.md`](./docs/methodology.md) | Sources, indices, confidence, known gaps |
