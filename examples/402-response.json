@@ -3,23 +3,19 @@
   "error": "payment_required",
   "resource": {
     "url": "https://api.agentweather.io/v1/agent-weather/current",
-    "description": "Current conditions snapshot: GitHub stats for 6 agent frameworks (LangChain, LangGraph, AutoGen, CrewAI, OpenAI Agents SDK, MCP servers), OpenAI/Anthropic/GitHub/Cursor status and incidents, MCP Registry entries updated in the last hour, npm weekly downloads (@modelcontextprotocol/sdk, @x402/core, @x402/xrpl) and XRPL mainnet server_info. Weather-style indices (visibility, pressure), per-source timestamps, data gaps and modeled confidence. JSON, cached up to 5 minutes.",
-    "mimeType": "application/json"
+    "description": "Current conditions snapshot: GitHub stats for 6 agent frameworks (LangChain, LangGraph, AutoGen, CrewAI, OpenAI Agents SDK, MCP servers), OpenAI/Anthropic/GitHub/Cursor status and incidents, MCP Registry entries updated in the last hour, npm weekly downloads (@modelcontextprotocol/sdk, @x402/core, @x402/xrpl) and XRPL mainnet server_info. Weather-style indices (visibility, pressure), per-source timestamps, data gaps and a confidence score (not yet calibrated) plus a separate data-quality score. Also: x402 payment activity on XRPL mainnet from our own ledger scan (t54-tagged payments, volume per asset, unique payers/merchants, heuristic real-vs-automated split with per-merchant concentration), plus 24h/7d baselines, baseline-relative temperature/pressure and fronts. JSON, cached up to 5 minutes.",
+    "mimeType": "application/json",
+    "serviceName": "Agent Weather",
+    "tags": [
+      "ai-agents",
+      "status",
+      "mcp",
+      "x402",
+      "xrpl"
+    ],
+    "iconUrl": "https://api.agentweather.io/icon.png"
   },
   "accepts": [
-    {
-      "scheme": "exact",
-      "network": "xrpl:0",
-      "payTo": "rnFHPGmgTLSg7hjzfr8wiHaTdTh3PijrZZ",
-      "maxTimeoutSeconds": 120,
-      "asset": "XRP",
-      "amount": "10000",
-      "extra": {
-        "invoiceId": "aw-4f10b3b2-c73c-41fb-aa44-349468e34b24",
-        "sourceTag": 804681468,
-        "areFeesSponsored": false
-      }
-    },
     {
       "scheme": "exact",
       "network": "xrpl:0",
@@ -28,7 +24,7 @@
       "asset": "524C555344000000000000000000000000000000",
       "amount": "0.01",
       "extra": {
-        "invoiceId": "aw-4f10b3b2-c73c-41fb-aa44-349468e34b24",
+        "invoiceId": "aw-7dd2ad0d-42f2-4b8f-b4e8-4ee66fabbd4a",
         "sourceTag": 804681468,
         "areFeesSponsored": false,
         "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De"

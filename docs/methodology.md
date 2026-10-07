@@ -1,6 +1,8 @@
 # Agent Weather methodology
 
-Applies to report `schema_version` **0.1.0-draft**, which is what the live API serves today (server v1.2.0).
+Applies to report `schema_version` **0.1.0-draft**, which is what the live API serves today (server v1.3.0).
+
+New in 1.3.0, the model-metrics directory (`/v1/models`) is a conditions report on AI models, not a ranking. It uses OpenRouter's public models list and the vendors' free status feeds, and every derived value carries its formula (details in the [README](../README.md#model-metrics-directory-new-in-130)).
 
 ## Principles
 
